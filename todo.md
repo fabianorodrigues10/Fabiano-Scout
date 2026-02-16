@@ -99,3 +99,17 @@
 - Backend e modelo de dados implementados
 - API tRPC criada e funcional
 - Próximo passo: desenvolver interface mobile
+
+
+## Importação de Dados
+- [ ] Analisar estrutura do CSV do usuário
+- [ ] Criar script de importação de dados
+- [ ] Mapear campos do CSV para campos do banco
+- [ ] Executar importação dos atletas
+- [ ] Validar dados importados
+
+## Correções de UI
+- [ ] Adicionar botão de login visível na tela principal quando usuário não está autenticado
+
+## Correções de Autenticação
+- [ ] Corrigir rota de login para funcionar no mobile

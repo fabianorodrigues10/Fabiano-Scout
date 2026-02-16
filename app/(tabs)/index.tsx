@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import * as WebBrowser from "expo-web-browser";
 import {
   View,
   Text,
@@ -20,6 +21,19 @@ export default function AtletasScreen() {
   const router = useRouter();
   const colors = useColors();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  
+  const handleLogin = async () => {
+    try {
+      // Usar a rota OAuth do servidor para mobile
+      const callbackUrl = "exps://8081-ie1dxgk9ujzaw4q26dwvo-273b4bae.us1.manus.computer/oauth/callback";
+      const state = btoa(callbackUrl); // Encode callback URL como state
+      const authUrl = `https://api.manus.im/oauth/authorize?client_id=${encodeURIComponent("ie1dxgk9ujzaw4q26dwvo")}&redirect_uri=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}&response_type=code`;
+      
+      await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
+    } catch (error) {
+      console.error("Erro ao fazer login:", error);
+    }
+  };
   
   const [searchQuery, setSearchQuery] = useState("");
   const [filtrosAtivos, setFiltrosAtivos] = useState<any>({});
@@ -67,9 +81,21 @@ export default function AtletasScreen() {
   if (!isAuthenticated) {
     return (
       <ScreenContainer className="justify-center items-center p-6">
-        <Text className="text-lg text-foreground text-center mb-4">
+        <IconSymbol name="person.circle" size={80} color={colors.muted} />
+        <Text className="text-xl font-bold text-foreground text-center mt-6 mb-2">
+          Bem-vindo ao Atletas Futebol
+        </Text>
+        <Text className="text-base text-muted text-center mb-8">
           Faça login para gerenciar seus atletas
         </Text>
+        <TouchableOpacity
+          onPress={handleLogin}
+          className="bg-primary rounded-lg px-8 py-4"
+        >
+          <Text className="text-white font-semibold text-base">
+            Fazer Login
+          </Text>
+        </TouchableOpacity>
       </ScreenContainer>
     );
   }
