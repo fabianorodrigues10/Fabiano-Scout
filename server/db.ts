@@ -1,6 +1,15 @@
-import { eq } from "drizzle-orm";
+import { eq, and, like, gte, lte, or, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import {
+  InsertUser,
+  users,
+  atletas,
+  configuracaoCampos,
+  configuracaoCamposPadrao,
+  InsertAtleta,
+  InsertConfiguracaoCampo,
+  InsertConfiguracaoCampoPadrao,
+} from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +98,252 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ==================== ATLETAS ====================
+
+/**
+ * Busca todos os atletas de um usuário
+ */
+export async function getAtletas(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select()
+    .from(atletas)
+    .where(eq(atletas.userId, userId))
+    .orderBy(desc(atletas.createdAt));
+}
+
+/**
+ * Busca atleta por ID
+ */
+export async function getAtletaById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(atletas)
+    .where(and(eq(atletas.id, id), eq(atletas.userId, userId)))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Busca atletas com filtros
+ */
+export async function searchAtletas(
+  userId: number,
+  filtros: {
+    nome?: string;
+    posicao?: string;
+    clube?: string;
+    idadeMin?: number;
+    idadeMax?: number;
+    alturaMin?: number;
+    alturaMax?: number;
+    pe?: string;
+    escala?: string;
+    valencia?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions = [eq(atletas.userId, userId)];
+  
+  if (filtros.nome) {
+    conditions.push(like(atletas.nome, `%${filtros.nome}%`));
+  }
+  
+  if (filtros.posicao) {
+    conditions.push(
+      or(
+        eq(atletas.posicao, filtros.posicao),
+        eq(atletas.segundaPosicao, filtros.posicao)
+      )!
+    );
+  }
+  
+  if (filtros.clube) {
+    conditions.push(like(atletas.clube, `%${filtros.clube}%`));
+  }
+  
+  if (filtros.idadeMin !== undefined) {
+    conditions.push(gte(atletas.idade, filtros.idadeMin));
+  }
+  
+  if (filtros.idadeMax !== undefined) {
+    conditions.push(lte(atletas.idade, filtros.idadeMax));
+  }
+  
+  if (filtros.alturaMin !== undefined) {
+    conditions.push(gte(atletas.altura, filtros.alturaMin.toString()));
+  }
+  
+  if (filtros.alturaMax !== undefined) {
+    conditions.push(lte(atletas.altura, filtros.alturaMax.toString()));
+  }
+  
+  if (filtros.pe) {
+    conditions.push(eq(atletas.pe, filtros.pe as any));
+  }
+  
+  if (filtros.escala) {
+    conditions.push(eq(atletas.escala, filtros.escala));
+  }
+  
+  if (filtros.valencia) {
+    conditions.push(eq(atletas.valencia, filtros.valencia));
+  }
+  
+  return db
+    .select()
+    .from(atletas)
+    .where(and(...conditions))
+    .orderBy(desc(atletas.createdAt));
+}
+
+/**
+ * Cria um novo atleta
+ */
+export async function createAtleta(data: InsertAtleta) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(atletas).values(data);
+  return Number(result[0].insertId);
+}
+
+/**
+ * Atualiza um atleta
+ */
+export async function updateAtleta(
+  id: number,
+  userId: number,
+  data: Partial<InsertAtleta>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(atletas)
+    .set(data)
+    .where(and(eq(atletas.id, id), eq(atletas.userId, userId)));
+}
+
+/**
+ * Exclui um atleta
+ */
+export async function deleteAtleta(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(atletas)
+    .where(and(eq(atletas.id, id), eq(atletas.userId, userId)));
+}
+
+// ==================== CONFIGURAÇÃO DE CAMPOS ====================
+
+/**
+ * Busca campos customizados de um usuário
+ */
+export async function getCamposCustomizados(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select()
+    .from(configuracaoCampos)
+    .where(eq(configuracaoCampos.userId, userId))
+    .orderBy(configuracaoCampos.ordem);
+}
+
+/**
+ * Cria um novo campo customizado
+ */
+export async function createCampoCustomizado(data: InsertConfiguracaoCampo) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(configuracaoCampos).values(data);
+  return Number(result[0].insertId);
+}
+
+/**
+ * Atualiza um campo customizado
+ */
+export async function updateCampoCustomizado(
+  id: number,
+  userId: number,
+  data: Partial<InsertConfiguracaoCampo>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(configuracaoCampos)
+    .set(data)
+    .where(and(eq(configuracaoCampos.id, id), eq(configuracaoCampos.userId, userId)));
+}
+
+/**
+ * Exclui um campo customizado
+ */
+export async function deleteCampoCustomizado(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(configuracaoCampos)
+    .where(and(eq(configuracaoCampos.id, id), eq(configuracaoCampos.userId, userId)));
+}
+
+/**
+ * Busca configuração de campos padrão de um usuário
+ */
+export async function getCamposPadrao(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select()
+    .from(configuracaoCamposPadrao)
+    .where(eq(configuracaoCamposPadrao.userId, userId))
+    .orderBy(configuracaoCamposPadrao.ordem);
+}
+
+/**
+ * Atualiza ou cria configuração de campo padrão
+ */
+export async function upsertCampoPadrao(data: InsertConfiguracaoCampoPadrao) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verifica se já existe
+  const existing = await db
+    .select()
+    .from(configuracaoCamposPadrao)
+    .where(
+      and(
+        eq(configuracaoCamposPadrao.userId, data.userId),
+        eq(configuracaoCamposPadrao.nomeCampo, data.nomeCampo)
+      )
+    )
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // Atualiza
+    await db
+      .update(configuracaoCamposPadrao)
+      .set(data)
+      .where(eq(configuracaoCamposPadrao.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    // Cria
+    const result = await db.insert(configuracaoCamposPadrao).values(data);
+    return Number(result[0].insertId);
+  }
+}
