@@ -15,6 +15,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import { generateReport } from "@/lib/report";
+import { Alert } from "react-native";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -92,8 +94,32 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [refetch]);
 
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
   const handleAddAtleta = () => {
     router.push("/atleta/novo" as any);
+  };
+
+  const handleGenerateReport = async () => {
+    if (filteredAtletas.length === 0) {
+      Alert.alert("Sem atletas", "Nenhum atleta encontrado com os filtros atuais.");
+      return;
+    }
+    setGeneratingPdf(true);
+    try {
+      const ids = filteredAtletas.map((a) => a.id);
+      const filters = {
+        posicao: selectedPosicao || "Todas",
+        faixaIdade: selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas",
+        clube: selectedClube || "Todos",
+        busca: searchQuery || undefined,
+      };
+      await generateReport(ids, filters);
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Não foi possível gerar o relatório.");
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   const handleAtletaPress = (id: number) => {
@@ -398,6 +424,27 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
         scrollEnabled={true}
       />
+
+      {/* FAB - Botão Gerar Relatório */}
+      <TouchableOpacity
+        onPress={handleGenerateReport}
+        disabled={generatingPdf}
+        className="absolute bottom-8 right-24 w-14 h-14 rounded-full justify-center items-center"
+        style={{
+          backgroundColor: generatingPdf ? colors.muted : colors.foreground,
+          shadowColor: colors.foreground,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 6,
+          elevation: 6,
+        }}
+      >
+        {generatingPdf ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <IconSymbol name="doc.text.fill" size={22} color={colors.background} />
+        )}
+      </TouchableOpacity>
 
       {/* FAB - Botão Adicionar */}
       <TouchableOpacity

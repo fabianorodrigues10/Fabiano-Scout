@@ -141,3 +141,10 @@
 - [x] Adicionar filtro por clube na lista de atletas
 - [x] Adicionar filtro por faixa de idade na lista de atletas
 - [x] Interface de filtros com botões/chips expansíveis
+
+## Relatório PDF
+- [x] Criar endpoint no servidor para gerar PDF com dados de atletas
+- [x] Adicionar botão "Gerar Relatório" na tela principal
+- [x] Gerar PDF com os atletas filtrados (respeitar filtros de posição, clube, idade e busca)
+- [x] Incluir resumo, tabela e fichas individuais no PDF
+- [x] Permitir compartilhar/baixar o PDF gerado
