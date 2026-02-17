@@ -155,3 +155,9 @@
 - [x] Adicionar botão "Preencher do Ogol" no formulário de cadastro/edição
 - [x] Preencher automaticamente os campos disponíveis e deixar vazios os que não existem
 - [x] Testar com múltiplos atletas para garantir consistência (19 testes passando)
+
+## Confirmação antes de Gerar Relatório
+- [x] Adicionar modal de confirmação antes de gerar o PDF
+- [x] Mostrar resumo dos filtros aplicados no modal
+- [x] Mostrar quantidade de atletas que serão incluídos no relatório
+- [x] Botões "Cancelar" e "Gerar Relatório" no modal
