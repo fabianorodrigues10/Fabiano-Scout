@@ -180,25 +180,25 @@ export default function AtletaDetalhesScreen() {
                 </Text>
               </View>
 
-              {atleta.dataNascimento && (
+              {atleta.dataNascimento != null && (
                 <InfoCard
                   icon="calendar"
                   label="Data de Nascimento"
                   value={new Date(atleta.dataNascimento).toLocaleDateString("pt-BR")}
                 />
               )}
-              {atleta.idade && (
+              {atleta.idade != null && atleta.idade > 0 && (
                 <InfoCard
                   icon="number"
                   label="Idade"
                   value={`${atleta.idade} anos`}
                 />
               )}
-              {atleta.altura && (
+              {atleta.altura != null && (
                 <InfoCard
                   icon="ruler"
                   label="Altura"
-                  value={`${Number(atleta.altura).toFixed(2)} cm`}
+                  value={`${Number(atleta.altura).toFixed(2)} m`}
                 />
               )}
               {atleta.pe && (
