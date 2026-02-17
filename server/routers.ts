@@ -70,7 +70,7 @@ export const appRouter = router({
           pe: z.enum(["direito", "esquerdo", "ambidestro"]).optional(),
           link: z.string().optional(),
           escala: z.string().max(100).optional(),
-          valencia: z.string().max(100).optional(),
+          valencia: z.string().max(1000).optional(),
           camposCustomizados: z.string().optional(), // JSON string
         })
       )
@@ -108,7 +108,7 @@ export const appRouter = router({
           pe: z.enum(["direito", "esquerdo", "ambidestro"]).optional(),
           link: z.string().optional(),
           escala: z.string().max(100).optional(),
-          valencia: z.string().max(100).optional(),
+          valencia: z.string().max(1000).optional(),
           camposCustomizados: z.string().optional(),
         })
       )

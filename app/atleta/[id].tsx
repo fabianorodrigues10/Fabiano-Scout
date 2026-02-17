@@ -336,17 +336,26 @@ export default function AtletaFormScreen() {
             />
           </View>
           
-          {/* Valência */}
+          {/* Valências */}
           <View className="mb-6">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Valência
-            </Text>
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-sm font-medium text-foreground">
+                Valências
+              </Text>
+              <Text className="text-xs text-muted">
+                {valencia.length}/500
+              </Text>
+            </View>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Velocidade, Técnica"
+              placeholder="Descreva as características e valências do atleta (velocidade, técnica, visão de jogo, liderança...)"
               placeholderTextColor={colors.muted}
               value={valencia}
-              onChangeText={setValencia}
+              onChangeText={(text) => setValencia(text.slice(0, 500))}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              style={{ minHeight: 120 }}
             />
           </View>
           

@@ -125,3 +125,8 @@
 - [x] Adicionar cards com informações destacadas
 - [x] Melhorar visual da tela de detalhes com layout mais profissional
 - [x] Adicionar ícones e cores para melhor visualização
+
+## Valências - Melhorias
+- [x] Exibir campo "Valências" na tela de detalhes do atleta (sempre visível, mesmo vazio, com placeholder "Sem descrição")
+- [x] Garantir campo de texto multilinha no formulário de edição para Valências (até 500+ caracteres)
+- [x] Remover limite de 100 caracteres no router tRPC para o campo valencia (agora 1000)

@@ -211,8 +211,8 @@ export default function AtletaDetalhesScreen() {
             </View>
           )}
 
-          {/* Card: Avaliação */}
-          {(atleta.escala || atleta.valencia) && (
+          {/* Card: Escala */}
+          {atleta.escala && (
             <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
               <View className="flex-row items-center mb-4">
                 <View className="w-10 h-10 rounded-full bg-warning/20 justify-center items-center mr-3">
@@ -222,23 +222,36 @@ export default function AtletaDetalhesScreen() {
                   Avaliação
                 </Text>
               </View>
-
-              {atleta.escala && (
-                <InfoCard
-                  icon="chart.bar.fill"
-                  label="Escala"
-                  value={atleta.escala}
-                />
-              )}
-              {atleta.valencia && (
-                <InfoCard
-                  icon="bolt.fill"
-                  label="Valência"
-                  value={atleta.valencia}
-                />
-              )}
+              <InfoCard
+                icon="chart.bar.fill"
+                label="Escala"
+                value={atleta.escala}
+              />
             </View>
           )}
+
+          {/* Card: Valências - sempre visível */}
+          <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                <IconSymbol name="bolt.fill" size={20} color={colors.primary} />
+              </View>
+              <Text className="text-lg font-bold text-foreground">
+                Valências
+              </Text>
+            </View>
+            {atleta.valencia ? (
+              <Text className="text-sm text-foreground leading-relaxed">
+                {atleta.valencia}
+              </Text>
+            ) : (
+              <View className="bg-background rounded-xl p-4 border border-border/50">
+                <Text className="text-sm text-muted text-center italic">
+                  Sem descrição de valências. Toque em editar para adicionar.
+                </Text>
+              </View>
+            )}
+          </View>
 
           {/* Card: Link */}
           {atleta.link && (
