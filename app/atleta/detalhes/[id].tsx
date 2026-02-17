@@ -1,32 +1,69 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from "react-native";
+import { useState } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Linking,
+  Alert,
+} from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function AtletaDetalhesScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const colors = useColors();
-  const { isAuthenticated } = useAuth();
-  
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const { data: atleta, isLoading } = trpc.atletas.getById.useQuery(
     { id: Number(id) },
-    { enabled: Boolean(isAuthenticated && id) }
+    { enabled: Boolean(id) }
   );
-  
+
+  const deleteAtleta = trpc.atletas.delete.useMutation({
+    onSuccess: () => {
+      Alert.alert("Sucesso", "Atleta deletado com sucesso!");
+      router.back();
+    },
+    onError: () => {
+      Alert.alert("Erro", "Falha ao deletar atleta");
+      setIsDeleting(false);
+    },
+  });
+
   const handleEditar = () => {
     router.push(`/atleta/${id}` as any);
   };
-  
+
+  const handleExcluir = () => {
+    Alert.alert(
+      "Excluir Atleta",
+      `Tem certeza que deseja excluir ${atleta?.nome}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            await deleteAtleta.mutateAsync({ id: Number(id) });
+          },
+        },
+      ]
+    );
+  };
+
   const handleAbrirLink = () => {
     if (atleta?.link) {
       Linking.openURL(atleta.link);
     }
   };
-  
+
   if (isLoading) {
     return (
       <ScreenContainer className="justify-center items-center">
@@ -34,132 +71,252 @@ export default function AtletaDetalhesScreen() {
       </ScreenContainer>
     );
   }
-  
+
   if (!atleta) {
     return (
       <ScreenContainer className="justify-center items-center p-6">
-        <Text className="text-lg text-muted text-center">
+        <IconSymbol name="person.crop.circle.badge.exclamationmark" size={64} color={colors.error} />
+        <Text className="text-lg font-bold text-foreground text-center mt-4 mb-2">
           Atleta não encontrado
+        </Text>
+        <Text className="text-sm text-muted text-center mb-6">
+          Este atleta pode ter sido deletado
         </Text>
         <TouchableOpacity
           onPress={() => router.back()}
-          className="mt-4 bg-primary rounded-lg px-6 py-3"
+          className="bg-primary rounded-lg px-6 py-3"
         >
           <Text className="text-white font-semibold">Voltar</Text>
         </TouchableOpacity>
       </ScreenContainer>
     );
   }
-  
+
   return (
     <ScreenContainer>
-      <View className="flex-1">
-        {/* Header */}
-        <View className="px-4 pt-4 pb-3 bg-background border-b border-border flex-row justify-between items-center">
-          <View className="flex-row items-center flex-1">
-            <TouchableOpacity onPress={() => router.back()} className="mr-3">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        {/* Header com Foto e Nome */}
+        <View className="bg-gradient-to-b from-primary/20 to-background pt-4 pb-6 px-4">
+          <View className="flex-row justify-between items-start mb-4">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="bg-background rounded-full p-2 border border-border"
+            >
               <IconSymbol
                 name="chevron.right"
-                size={24}
+                size={20}
                 color={colors.foreground}
                 style={{ transform: [{ rotate: "180deg" }] }}
               />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-foreground" numberOfLines={1}>
+
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={handleEditar}
+                className="bg-primary rounded-full p-2"
+              >
+                <IconSymbol name="pencil" size={18} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleExcluir}
+                disabled={isDeleting}
+                className="bg-error rounded-full p-2"
+              >
+                <IconSymbol name="trash" size={18} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Avatar Placeholder */}
+          <View className="items-center mb-4">
+            <View className="w-24 h-24 rounded-full bg-primary/30 justify-center items-center mb-3 border-2 border-primary">
+              <IconSymbol name="person.fill" size={48} color={colors.primary} />
+            </View>
+            <Text className="text-2xl font-bold text-foreground text-center">
               {atleta.nome}
             </Text>
-          </View>
-          
-          <TouchableOpacity onPress={handleEditar}>
-            <IconSymbol name="pencil" size={22} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-        
-        {/* Conteúdo */}
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-          {/* Informações Básicas */}
-          <View className="bg-surface rounded-xl p-4 mb-4 border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-3">
-              Informações Básicas
-            </Text>
-            
-            <InfoRow label="Nome" value={atleta.nome} />
-            {atleta.posicao && <InfoRow label="Posição" value={atleta.posicao} />}
-            {atleta.segundaPosicao && (
-              <InfoRow label="2ª Posição" value={atleta.segundaPosicao} />
-            )}
-            {atleta.clube && <InfoRow label="Clube" value={atleta.clube} />}
-          </View>
-          
-          {/* Dados Físicos */}
-          {(atleta.dataNascimento || atleta.idade || atleta.altura || atleta.pe) && (
-            <View className="bg-surface rounded-xl p-4 mb-4 border border-border">
-              <Text className="text-lg font-semibold text-foreground mb-3">
-                Dados Físicos
+            {atleta.posicao && (
+              <Text className="text-base text-primary font-semibold mt-1">
+                {atleta.posicao}
               </Text>
-              
+            )}
+          </View>
+        </View>
+
+        {/* Conteúdo Principal */}
+        <View className="px-4 pb-8">
+          {/* Card: Informações Básicas */}
+          <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                <IconSymbol name="person.fill" size={20} color={colors.primary} />
+              </View>
+              <Text className="text-lg font-bold text-foreground">
+                Informações Básicas
+              </Text>
+            </View>
+
+            <InfoCard icon="person.fill" label="Nome" value={atleta.nome} />
+            {atleta.posicao && (
+              <InfoCard icon="target" label="Posição Principal" value={atleta.posicao} />
+            )}
+            {atleta.segundaPosicao && (
+              <InfoCard icon="target" label="Segunda Posição" value={atleta.segundaPosicao} />
+            )}
+            {atleta.clube && (
+              <InfoCard icon="building.2.fill" label="Clube" value={atleta.clube} />
+            )}
+          </View>
+
+          {/* Card: Dados Físicos */}
+          {(atleta.dataNascimento || atleta.idade || atleta.altura || atleta.pe) && (
+            <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+              <View className="flex-row items-center mb-4">
+                <View className="w-10 h-10 rounded-full bg-success/20 justify-center items-center mr-3">
+                  <IconSymbol name="heart.fill" size={20} color={colors.success} />
+                </View>
+                <Text className="text-lg font-bold text-foreground">
+                  Dados Físicos
+                </Text>
+              </View>
+
               {atleta.dataNascimento && (
-                <InfoRow
+                <InfoCard
+                  icon="calendar"
                   label="Data de Nascimento"
                   value={new Date(atleta.dataNascimento).toLocaleDateString("pt-BR")}
                 />
               )}
               {atleta.idade && (
-                <InfoRow label="Idade" value={`${atleta.idade} anos`} />
+                <InfoCard
+                  icon="number"
+                  label="Idade"
+                  value={`${atleta.idade} anos`}
+                />
               )}
               {atleta.altura && (
-                <InfoRow label="Altura" value={`${atleta.altura} cm`} />
+                <InfoCard
+                  icon="ruler"
+                  label="Altura"
+                  value={`${Number(atleta.altura).toFixed(2)} cm`}
+                />
               )}
               {atleta.pe && (
-                <InfoRow
-                  label="Pé"
+                <InfoCard
+                  icon="figure.walk"
+                  label="Pé Preferencial"
                   value={atleta.pe.charAt(0).toUpperCase() + atleta.pe.slice(1)}
                 />
               )}
             </View>
           )}
-          
-          {/* Avaliação */}
+
+          {/* Card: Avaliação */}
           {(atleta.escala || atleta.valencia) && (
-            <View className="bg-surface rounded-xl p-4 mb-4 border border-border">
-              <Text className="text-lg font-semibold text-foreground mb-3">
-                Avaliação
-              </Text>
-              
-              {atleta.escala && <InfoRow label="Escala" value={atleta.escala} />}
-              {atleta.valencia && <InfoRow label="Valência" value={atleta.valencia} />}
+            <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+              <View className="flex-row items-center mb-4">
+                <View className="w-10 h-10 rounded-full bg-warning/20 justify-center items-center mr-3">
+                  <IconSymbol name="star.fill" size={20} color={colors.warning} />
+                </View>
+                <Text className="text-lg font-bold text-foreground">
+                  Avaliação
+                </Text>
+              </View>
+
+              {atleta.escala && (
+                <InfoCard
+                  icon="chart.bar.fill"
+                  label="Escala"
+                  value={atleta.escala}
+                />
+              )}
+              {atleta.valencia && (
+                <InfoCard
+                  icon="bolt.fill"
+                  label="Valência"
+                  value={atleta.valencia}
+                />
+              )}
             </View>
           )}
-          
-          {/* Link */}
+
+          {/* Card: Link */}
           {atleta.link && (
-            <View className="bg-surface rounded-xl p-4 mb-4 border border-border">
-              <Text className="text-lg font-semibold text-foreground mb-3">
-                Link
-              </Text>
-              
+            <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+              <View className="flex-row items-center mb-4">
+                <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                  <IconSymbol name="link" size={20} color={colors.primary} />
+                </View>
+                <Text className="text-lg font-bold text-foreground">
+                  Link
+                </Text>
+              </View>
+
               <TouchableOpacity
                 onPress={handleAbrirLink}
-                className="bg-primary/10 rounded-lg p-3 flex-row items-center"
+                className="bg-primary/10 rounded-xl p-3 flex-row items-center border border-primary/30"
               >
-                <Text className="flex-1 text-primary" numberOfLines={1}>
-                  {atleta.link}
+                <IconSymbol name="link" size={18} color={colors.primary} />
+                <Text className="flex-1 text-primary ml-2 font-medium" numberOfLines={1}>
+                  Abrir Link
                 </Text>
-                <IconSymbol name="chevron.right" size={18} color={colors.primary} />
+                <IconSymbol name="chevron.right" size={16} color={colors.primary} />
               </TouchableOpacity>
             </View>
           )}
-        </ScrollView>
-      </View>
+
+          {/* Card: Campos Customizados */}
+          {atleta.camposCustomizados && (
+            <View className="bg-surface rounded-2xl p-4 border border-border shadow-sm">
+              <View className="flex-row items-center mb-4">
+                <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                  <IconSymbol name="slider.horizontal.3" size={20} color={colors.primary} />
+                </View>
+                <Text className="text-lg font-bold text-foreground">
+                  Campos Customizados
+                </Text>
+              </View>
+
+              {typeof atleta.camposCustomizados === "string" &&
+                (() => {
+                  try {
+                    const campos = JSON.parse(atleta.camposCustomizados);
+                    return Object.entries(campos).map(([key, value]: any) => (
+                      <InfoCard
+                        key={key}
+                        icon="slider.horizontal.3"
+                        label={key}
+                        value={String(value)}
+                      />
+                    ));
+                  } catch {
+                    return null;
+                  }
+                })()}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) {
+  const colors = useColors();
+
   return (
-    <View className="flex-row justify-between items-start py-2 border-b border-border/50 last:border-b-0">
-      <Text className="text-sm text-muted flex-1">{label}</Text>
-      <Text className="text-sm text-foreground font-medium flex-1 text-right">
+    <View className="flex-row items-center py-3 border-b border-border/50 last:border-b-0">
+      <IconSymbol name={icon as any} size={16} color={colors.muted} />
+      <Text className="text-sm text-muted flex-1 ml-3">{label}</Text>
+      <Text className="text-sm text-foreground font-semibold flex-1 text-right">
         {value}
       </Text>
     </View>

@@ -113,3 +113,15 @@
 
 ## Correções de Autenticação
 - [ ] Corrigir rota de login para funcionar no mobile
+
+## Correções Urgentes - Autenticação Web
+- [ ] Corrigir callback OAuth para funcionar na versão web
+- [ ] Implementar autenticação funcional para acesso aos dados
+
+
+## Melhorias de UI/UX - Dashboard
+- [ ] Corrigir tela de detalhes para mostrar todas as informações do atleta
+- [ ] Redesenhar dashboard com interface sofisticada e moderna
+- [ ] Adicionar cards com informações destacadas
+- [ ] Melhorar visual da tela de detalhes com layout mais profissional
+- [ ] Adicionar ícones e cores para melhor visualização

@@ -51,7 +51,7 @@ export const atletas = mysqlTable("atletas", {
   pe: mysqlEnum("pe", ["direito", "esquerdo", "ambidestro"]),
   link: text("link"),
   escala: varchar("escala", { length: 100 }),
-  valencia: varchar("valencia", { length: 100 }),
+  valencia: text("valencia"), // Campo para características detalhadas (até 65535 caracteres)
   
   // Campos customizados (JSON para flexibilidade)
   camposCustomizados: text("camposCustomizados"), // JSON string

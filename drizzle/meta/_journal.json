@@ -15,6 +15,13 @@
       "when": 1771258393616,
       "tag": "0001_lively_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771297426258,
+      "tag": "0002_shocking_nico_minoru",
+      "breakpoints": true
     }
   ]
 }
