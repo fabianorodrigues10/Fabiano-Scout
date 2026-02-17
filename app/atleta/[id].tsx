@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -14,6 +15,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
+import { fetchOgolData } from "@/lib/ogol";
 
 const POSICOES = [
   "Goleiro",
@@ -50,6 +52,7 @@ export default function AtletaFormScreen() {
   const [link, setLink] = useState("");
   const [escala, setEscala] = useState("");
   const [valencia, setValencia] = useState("");
+  const [ogolLoading, setOgolLoading] = useState(false);
   
   // Query para buscar atleta (se editando)
   const { data: atleta, isLoading: loadingAtleta } = trpc.atletas.getById.useQuery(
@@ -116,6 +119,80 @@ export default function AtletaFormScreen() {
       }
     }
   }, [dataNascimento]);
+
+  // Preencher dados do Ogol
+  const handlePreencherOgol = async () => {
+    if (!link.trim()) {
+      Alert.alert("Atenção", "Cole o link do Ogol no campo Link antes de preencher.");
+      return;
+    }
+    if (!link.includes("ogol.com")) {
+      Alert.alert("Atenção", "O link deve ser do site ogol.com.br");
+      return;
+    }
+
+    setOgolLoading(true);
+    try {
+      const result = await fetchOgolData(link.trim());
+
+      if (result.success && result.data) {
+        const d = result.data;
+        let preenchidos = 0;
+
+        if (d.nome && !nome.trim()) {
+          setNome(d.nome);
+          preenchidos++;
+        }
+        if (d.posicao && !posicao.trim()) {
+          setPosicao(d.posicao);
+          preenchidos++;
+        }
+        if (d.dataNascimento && !dataNascimento.trim()) {
+          setDataNascimento(d.dataNascimento);
+          preenchidos++;
+        }
+        if (d.idade != null && !idade.trim()) {
+          setIdade(d.idade.toString());
+          preenchidos++;
+        }
+        if (d.altura != null && !altura.trim()) {
+          // Converte de metros para cm string (ex: 1.76 -> "176")
+          const cm = Math.round(d.altura * 100);
+          setAltura(cm.toString());
+          preenchidos++;
+        }
+        if (d.pe && !pe.trim()) {
+          setPe(d.pe);
+          preenchidos++;
+        }
+        if (d.clube && !clube.trim()) {
+          setClube(d.clube);
+          preenchidos++;
+        }
+
+        if (preenchidos > 0) {
+          Alert.alert(
+            "Dados Importados",
+            `${preenchidos} campo(s) preenchido(s) automaticamente a partir do Ogol.\n\nRevise os dados e ajuste o que for necessário.`
+          );
+        } else {
+          Alert.alert(
+            "Nenhum campo novo",
+            "Todos os campos já estavam preenchidos. Os dados do Ogol não sobrescrevem campos existentes."
+          );
+        }
+      } else {
+        Alert.alert(
+          "Erro ao importar",
+          result.error || "Não foi possível extrair os dados do Ogol. Tente novamente."
+        );
+      }
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Erro inesperado ao acessar o Ogol.");
+    } finally {
+      setOgolLoading(false);
+    }
+  };
   
   const handleSalvar = async () => {
     if (!nome.trim()) {
@@ -202,6 +279,7 @@ export default function AtletaFormScreen() {
   }
   
   const isLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  const showOgolButton = link.includes("ogol.com");
   
   return (
     <ScreenContainer>
@@ -226,6 +304,61 @@ export default function AtletaFormScreen() {
         
         {/* Formulário */}
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+
+          {/* Link do Ogol - Movido para o topo para facilitar o fluxo */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Link do Ogol
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Cole o link do ogol.com.br do atleta"
+              placeholderTextColor={colors.muted}
+              value={link}
+              onChangeText={setLink}
+              keyboardType="url"
+              autoCapitalize="none"
+            />
+            
+            {/* Botão Preencher do Ogol - aparece quando link contém ogol.com */}
+            {showOgolButton && (
+              <TouchableOpacity
+                onPress={handlePreencherOgol}
+                disabled={ogolLoading}
+                className="mt-2 rounded-lg py-3 flex-row items-center justify-center"
+                style={{
+                  backgroundColor: "#FF6B00",
+                  opacity: ogolLoading ? 0.6 : 1,
+                }}
+              >
+                {ogolLoading ? (
+                  <>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text className="text-white font-semibold ml-2">
+                      Buscando dados...
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <IconSymbol name="bolt.fill" size={18} color="#FFFFFF" />
+                    <Text className="text-white font-semibold ml-2">
+                      Preencher do Ogol
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Separador visual */}
+          {showOgolButton && (
+            <View className="mb-4 flex-row items-center">
+              <View className="flex-1 h-px bg-border" />
+              <Text className="mx-3 text-xs text-muted">Dados do Atleta</Text>
+              <View className="flex-1 h-px bg-border" />
+            </View>
+          )}
+
           {/* Nome */}
           <View className="mb-4">
             <Text className="text-sm font-medium text-foreground mb-2">
@@ -350,22 +483,6 @@ export default function AtletaFormScreen() {
               placeholderTextColor={colors.muted}
               value={pe}
               onChangeText={setPe}
-            />
-          </View>
-          
-          {/* Link */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Link
-            </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="URL de vídeo ou perfil"
-              placeholderTextColor={colors.muted}
-              value={link}
-              onChangeText={setLink}
-              keyboardType="url"
-              autoCapitalize="none"
             />
           </View>
           

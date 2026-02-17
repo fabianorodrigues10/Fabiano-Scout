@@ -148,3 +148,10 @@
 - [x] Gerar PDF com os atletas filtrados (respeitar filtros de posição, clube, idade e busca)
 - [x] Incluir resumo, tabela e fichas individuais no PDF
 - [x] Permitir compartilhar/baixar o PDF gerado
+
+## Auto-preenchimento via Ogol
+- [x] Criar endpoint no servidor para extrair dados de atleta do Ogol (scraping)
+- [x] Mapear campos do Ogol para campos do app (nome, posição, data nasc., altura, pé, clube)
+- [x] Adicionar botão "Preencher do Ogol" no formulário de cadastro/edição
+- [x] Preencher automaticamente os campos disponíveis e deixar vazios os que não existem
+- [x] Testar com múltiplos atletas para garantir consistência (19 testes passando)
