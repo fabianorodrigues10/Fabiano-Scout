@@ -69,7 +69,16 @@ export default function AtletaFormScreen() {
       setPosicao(atleta.posicao || "");
       setSegundaPosicao(atleta.segundaPosicao || "");
       setClube(atleta.clube || "");
-      setDataNascimento(atleta.dataNascimento?.toString() || "");
+      // Converte ISO date para dd/mm/aa para exibição no formulário
+      if (atleta.dataNascimento) {
+        const d = new Date(atleta.dataNascimento);
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        setDataNascimento(`${dd}/${mm}/${yy}`);
+      } else {
+        setDataNascimento("");
+      }
       setIdade(atleta.idade?.toString() || "");
       setAltura(atleta.altura || "");
       setPe(atleta.pe || "");
@@ -79,18 +88,29 @@ export default function AtletaFormScreen() {
     }
   }, [atleta]);
   
-  // Calcula idade automaticamente
+  // Calcula idade automaticamente a partir do formato dd/mm/aa
   useEffect(() => {
-    if (dataNascimento) {
+    if (dataNascimento && dataNascimento.length === 8) {
       try {
-        const nascimento = new Date(dataNascimento);
-        const hoje = new Date();
-        let idadeCalculada = hoje.getFullYear() - nascimento.getFullYear();
-        const mes = hoje.getMonth() - nascimento.getMonth();
-        if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
-          idadeCalculada--;
+        const parts = dataNascimento.split("/");
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]);
+          let year = parseInt(parts[2]);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            year = year > 50 ? 1900 + year : 2000 + year;
+            const nascimento = new Date(year, month - 1, day);
+            const hoje = new Date();
+            let idadeCalculada = hoje.getFullYear() - nascimento.getFullYear();
+            const mes = hoje.getMonth() - nascimento.getMonth();
+            if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+              idadeCalculada--;
+            }
+            if (idadeCalculada >= 0 && idadeCalculada <= 60) {
+              setIdade(idadeCalculada.toString());
+            }
+          }
         }
-        setIdade(idadeCalculada.toString());
       } catch (e) {
         // Data inválida
       }
@@ -104,12 +124,27 @@ export default function AtletaFormScreen() {
     }
     
     try {
+      // Converte dd/mm/aa para ISO date string para o backend
+      let dataNascimentoISO: string | undefined = undefined;
+      if (dataNascimento && dataNascimento.length === 8) {
+        const parts = dataNascimento.split("/");
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]);
+          let year = parseInt(parts[2]);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            year = year > 50 ? 1900 + year : 2000 + year;
+            dataNascimentoISO = new Date(year, month - 1, day).toISOString();
+          }
+        }
+      }
+
       const data = {
         nome: nome.trim(),
         posicao: posicao || undefined,
         segundaPosicao: segundaPosicao || undefined,
         clube: clube || undefined,
-        dataNascimento: dataNascimento || undefined,
+        dataNascimento: dataNascimentoISO,
         idade: idade ? Number(idade) : undefined,
         altura: altura ? Number(altura) : undefined,
         pe: pe as any || undefined,
@@ -254,10 +289,22 @@ export default function AtletaFormScreen() {
             </Text>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="AAAA-MM-DD (Ex: 1992-02-05)"
+              placeholder="dd/mm/aa (Ex: 05/02/92)"
               placeholderTextColor={colors.muted}
               value={dataNascimento}
-              onChangeText={setDataNascimento}
+              onChangeText={(text) => {
+                // Auto-format: add slashes as user types
+                const digits = text.replace(/\D/g, "").slice(0, 6);
+                let formatted = digits;
+                if (digits.length > 4) {
+                  formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
+                } else if (digits.length > 2) {
+                  formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+                }
+                setDataNascimento(formatted);
+              }}
+              keyboardType="numeric"
+              maxLength={8}
             />
           </View>
           

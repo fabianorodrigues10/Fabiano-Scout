@@ -25,8 +25,18 @@ const MAPPING = {
   "pencil": "edit",
   "trash": "delete",
   "xmark": "close",
+  "xmark.circle.fill": "cancel",
+  "slider.horizontal.3": "tune",
   "gearshape.fill": "settings",
   "checkmark": "check",
+  "star.fill": "star",
+  "bolt.fill": "flash-on",
+  "calendar": "event",
+  "number": "tag",
+  "chart.bar.fill": "bar-chart",
+  "link": "link",
+  "ruler": "straighten",
+  "figure.walk": "directions-walk",
 } as IconMapping;
 
 /**

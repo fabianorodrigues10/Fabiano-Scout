@@ -184,7 +184,13 @@ export default function AtletaDetalhesScreen() {
                 <InfoCard
                   icon="calendar"
                   label="Data de Nascimento"
-                  value={new Date(atleta.dataNascimento).toLocaleDateString("pt-BR")}
+                  value={(() => {
+                    const d = new Date(atleta.dataNascimento);
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const yy = String(d.getFullYear()).slice(-2);
+                    return `${dd}/${mm}/${yy}`;
+                  })()}
                 />
               )}
               {atleta.idade != null && atleta.idade > 0 && (

@@ -130,3 +130,14 @@
 - [x] Exibir campo "Valências" na tela de detalhes do atleta (sempre visível, mesmo vazio, com placeholder "Sem descrição")
 - [x] Garantir campo de texto multilinha no formulário de edição para Valências (até 500+ caracteres)
 - [x] Remover limite de 100 caracteres no router tRPC para o campo valencia (agora 1000)
+
+## Correção Data de Nascimento
+- [x] Alterar campo de data de nascimento no formulário para aceitar formato dd/mm/aa
+- [x] Alterar exibição da data de nascimento na tela de detalhes para formato dd/mm/aa
+- [x] Converter entre formato dd/mm/aa (UI) e ISO (banco) corretamente
+
+## Filtros na Página Inicial
+- [x] Adicionar filtro por posição na lista de atletas
+- [x] Adicionar filtro por clube na lista de atletas
+- [x] Adicionar filtro por faixa de idade na lista de atletas
+- [x] Interface de filtros com botões/chips expansíveis
