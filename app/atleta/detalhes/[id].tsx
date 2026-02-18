@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Image,
 } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -62,6 +63,10 @@ export default function AtletaDetalhesScreen() {
     if (atleta?.link) {
       Linking.openURL(atleta.link);
     }
+  };
+
+  const handleAdicionarFoto = () => {
+    router.push(`/atleta/${id}/galeria` as any);
   };
 
   if (isLoading) {
@@ -257,6 +262,33 @@ export default function AtletaDetalhesScreen() {
                 </Text>
               </View>
             )}
+          </View>
+
+          {/* Card: Galeria de Fotos */}
+          <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                <IconSymbol name="photo.fill" size={20} color={colors.primary} />
+              </View>
+              <Text className="text-lg font-bold text-foreground flex-1">
+                Fotos
+              </Text>
+              <TouchableOpacity
+                onPress={handleAdicionarFoto}
+                className="bg-primary rounded-full p-2"
+              >
+                <IconSymbol name="plus" size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={handleAdicionarFoto}
+              className="bg-primary/10 rounded-xl p-4 border border-primary/30 items-center"
+            >
+              <IconSymbol name="photo.fill" size={32} color={colors.primary} />
+              <Text className="text-sm text-primary font-medium mt-2">
+                Adicionar Fotos
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Card: Link */}
