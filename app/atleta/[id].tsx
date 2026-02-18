@@ -495,14 +495,34 @@ export default function AtletaFormScreen() {
             <Text className="text-sm font-medium text-foreground mb-2">
               Segunda Posição (opcional)
             </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Meia"
-              placeholderTextColor={colors.muted}
-              value={segundaPosicao}
-              onChangeText={setSegundaPosicao}
-              style={{ color: colors.foreground }}
-            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row gap-2">
+                {POSICOES.map((pos) => (
+                  <TouchableOpacity
+                    key={pos}
+                    onPress={() => setSegundaPosicao(segundaPosicao === pos ? "" : pos)}
+                    style={{
+                      backgroundColor: segundaPosicao === pos ? colors.primary : colors.surface,
+                      borderWidth: segundaPosicao === pos ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: segundaPosicao === pos ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {pos}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
           
           {/* Clube */}
