@@ -172,3 +172,8 @@
 - [x] Permitir múltiplas seleções de faixas de idade nos filtros
 - [x] Remover fichas individuais do PDF
 - [x] Manter apenas tabela resumida no relatório
+
+## Correção: Ogol não funciona na web
+- [x] Implementar endpoint proxy no servidor para contornar Cloudflare
+- [x] Atualizar app para usar proxy na web e WebView no celular
+- [ ] Testar no notebook
