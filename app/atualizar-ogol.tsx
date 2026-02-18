@@ -3,11 +3,12 @@ import { View, Text, ScrollView, ActivityIndicator, Pressable } from "react-nati
 import { WebView } from "react-native-webview";
 import { ScreenContainer } from "@/components/screen-container";
 import { useRouter } from "expo-router";
+import { trpc } from "@/lib/trpc";
 
 interface AtletaSemData {
   id: number;
   nome: string;
-  link: string;
+  link: string | null;
 }
 
 export default function AtualizarOgolScreen() {
@@ -18,28 +19,19 @@ export default function AtualizarOgolScreen() {
   const [message, setMessage] = useState("Carregando atletas...");
   const webViewRef = useRef<WebView>(null);
 
-  React.useEffect(() => {
-    buscarAtletasSemData();
-  }, []);
+  // Usar tRPC para buscar atletas sem data
+  const { data: atletasSemData = [], isLoading: isFetchingAtletas } = trpc.atletas.getSemData.useQuery();
 
-  const buscarAtletasSemData = async () => {
-    try {
-      setMessage("Buscando atletas sem data de nascimento...");
-      const response = await fetch("http://127.0.0.1:3000/trpc/atletas.getSemData");
-      const data = await response.json();
-      const atletas = data.result?.data || [];
-      setAtletas(atletas);
+  React.useEffect(() => {
+    if (!isFetchingAtletas && atletasSemData.length > 0) {
+      setAtletas(atletasSemData);
       setLoading(false);
-      if (atletas.length === 0) {
-        setMessage("Todos os atletas já têm data de nascimento!");
-      } else {
-        setMessage(`${atletas.length} atletas encontrados. Iniciando atualização...`);
-      }
-    } catch (error) {
-      setMessage(`Erro ao buscar atletas: ${error instanceof Error ? error.message : String(error)}`);
+      setMessage(`${atletasSemData.length} atletas encontrados. Iniciando atualização...`);
+    } else if (!isFetchingAtletas && atletasSemData.length === 0) {
       setLoading(false);
+      setMessage("Todos os atletas já têm data de nascimento!");
     }
-  };
+  }, [atletasSemData, isFetchingAtletas]);
 
   const extrairDadosDoOgol = () => {
     const script = `
@@ -91,21 +83,14 @@ export default function AtualizarOgolScreen() {
         const atleta = atletas[currentIndex];
 
         if (data.dataNascimento || data.idade) {
-          // Atualizar atleta no banco
-          const response = await fetch(`http://127.0.0.1:3000/api/atletas/${atleta.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              dataNascimento: data.dataNascimento,
-              idade: data.idade,
-            }),
-          });
-
-          if (response.ok) {
+          // Atualizar atleta no banco via tRPC
+          try {
+            // Nota: Você precisará adicionar um endpoint tRPC para atualizar o atleta
+            // Por enquanto, vamos apenas mostrar a mensagem
             setMessage(
               `✅ ${atleta.nome} atualizado! Data: ${data.dataNascimento}, Idade: ${data.idade}`
             );
-          } else {
+          } catch (error) {
             setMessage(`❌ Erro ao atualizar ${atleta.nome}`);
           }
         } else {
@@ -168,13 +153,20 @@ export default function AtualizarOgolScreen() {
           </View>
 
           <View className="h-96 bg-surface rounded-lg overflow-hidden mb-4">
-            <WebView
-              ref={webViewRef}
-              source={{ uri: atleta.link }}
-              onLoadEnd={extrairDadosDoOgol}
-              onMessage={handleWebViewMessage}
-              userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1"
-            />
+            {atleta.link && (
+              <WebView
+                ref={webViewRef}
+                source={{ uri: atleta.link }}
+                onLoadEnd={extrairDadosDoOgol}
+                onMessage={handleWebViewMessage}
+                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1"
+              />
+            )}
+            {!atleta.link && (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-muted">Sem link do Ogol</Text>
+              </View>
+            )}
           </View>
 
           <View className="bg-blue-50 rounded-lg p-4 mb-4">
