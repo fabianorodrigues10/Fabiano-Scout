@@ -21,6 +21,7 @@ export default function AtualizarOgolScreen() {
 
   // Usar tRPC para buscar atletas sem data
   const { data: atletasSemData = [], isLoading: isFetchingAtletas } = trpc.atletas.getSemData.useQuery();
+  const updateAtletaMutation = trpc.atletas.update.useMutation();
 
   React.useEffect(() => {
     if (!isFetchingAtletas && atletasSemData.length > 0) {
@@ -85,29 +86,49 @@ export default function AtualizarOgolScreen() {
         if (data.dataNascimento || data.idade) {
           // Atualizar atleta no banco via tRPC
           try {
-            // Nota: Você precisará adicionar um endpoint tRPC para atualizar o atleta
-            // Por enquanto, vamos apenas mostrar a mensagem
+            // Chamar endpoint tRPC para atualizar
+            await updateAtletaMutation.mutateAsync({
+              id: atleta.id,
+              dataNascimento: data.dataNascimento,
+              idade: data.idade,
+            });
             setMessage(
               `✅ ${atleta.nome} atualizado! Data: ${data.dataNascimento}, Idade: ${data.idade}`
             );
           } catch (error) {
-            setMessage(`❌ Erro ao atualizar ${atleta.nome}`);
+            setMessage(`❌ Erro ao atualizar ${atleta.nome}: ${error}`);
           }
         } else {
           setMessage(`⚠️ Não conseguiu extrair dados de ${atleta.nome}`);
         }
 
-        // Próximo atleta
+        // Próximo atleta com delay maior
         if (currentIndex < atletas.length - 1) {
           setTimeout(() => {
             setCurrentIndex(currentIndex + 1);
-          }, 1000);
+          }, 2000); // Aumentado de 1000 para 2000ms
         } else {
           setMessage("✅ Atualização concluída!");
         }
+      } else if (data.type === "error") {
+        setMessage(`❌ Erro na WebView: ${data.message}`);
+        // Tentar próximo atleta após erro
+        setTimeout(() => {
+          if (currentIndex < atletas.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+          } else {
+            setMessage("✅ Atualização concluída com alguns erros!");
+          }
+        }, 3000);
       }
     } catch (error) {
       setMessage(`Erro ao processar: ${error}`);
+      // Tentar próximo atleta
+      setTimeout(() => {
+        if (currentIndex < atletas.length - 1) {
+          setCurrentIndex(currentIndex + 1);
+        }
+      }, 3000);
     }
   };
 
