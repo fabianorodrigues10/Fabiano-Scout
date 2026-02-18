@@ -177,3 +177,9 @@
 - [x] Implementar endpoint proxy no servidor para contornar Cloudflare
 - [x] Atualizar app para usar proxy na web e WebView no celular
 - [ ] Testar no notebook
+
+## Bug: Auto-preenchimento Ogol não funciona (web e celular)
+- [x] Debugar endpoint proxy - não está retornando dados (problema de encoding ISO-8859-1)
+- [x] Verificar fetch do cliente - erro ao chamar API
+- [x] Testar no navegador console para ver erro exato
+- [x] Corrigir e testar novamente (FUNCIONANDO - todos os dados sendo extraídos)

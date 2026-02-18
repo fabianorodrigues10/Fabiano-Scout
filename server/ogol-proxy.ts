@@ -33,12 +33,39 @@ const HEADERS = {
 };
 
 function extractField(html: string, label: string): string | null {
-  const regex = new RegExp(
-    `${label}[^<]*</[^>]*>[^<]*<[^>]*>([^<]+)`,
+  // Padrão 1: label seguido de card-data__value (singular)
+  let regex = new RegExp(
+    `card-data__label">[^<]*${label}[^<]*</[^>]*>[^<]*<[^>]*card-data__value[^>]*>([^<]+)<`,
     "i"
   );
-  const match = html.match(regex);
-  return match ? match[1].trim() : null;
+  let match = html.match(regex);
+  if (match) return match[1].trim();
+
+  // Padrão 2: label seguido de card-data__values (plural) com span card-data__value
+  regex = new RegExp(
+    `card-data__label">[^<]*${label}[^<]*</[^>]*>[^<]*<span[^>]*card-data__values[^>]*>[^<]*<span[^>]*card-data__value[^>]*>([^<]+)<`,
+    "i"
+  );
+  match = html.match(regex);
+  if (match) return match[1].trim();
+
+  // Padrão 3: label seguido de div com card-data__value
+  regex = new RegExp(
+    `card-data__label">[^<]*${label}[^<]*</[^>]*>[^<]*<div[^>]*card-data__value[^>]*>([^<]+)<`,
+    "i"
+  );
+  match = html.match(regex);
+  if (match) return match[1].trim();
+
+  // Padrão 4: label com card-data__values contendo valor direto
+  regex = new RegExp(
+    `card-data__label">[^<]*${label}[^<]*</[^>]*>[^<]*<[^>]*card-data__values[^>]*>([^<]+)<`,
+    "i"
+  );
+  match = html.match(regex);
+  if (match) return match[1].trim();
+
+  return null;
 }
 
 function mapPosicao(ogolPos: string): string {
@@ -48,41 +75,49 @@ function mapPosicao(ogolPos: string): string {
     defensor: "Zagueiro",
     zagueiro: "Zagueiro",
     lateral: "Lateral",
-    "lateral-esquerdo": "Lateral",
     "lateral-direito": "Lateral",
+    "lateral-esquerdo": "Lateral",
     volante: "Volante",
-    médio: "Meia",
     meia: "Meia",
+    "meia-direita": "Meia",
+    "meia-esquerda": "Meia",
     extremo: "Extremo",
-    ala: "Extremo",
+    "extremo-direito": "Extremo",
+    "extremo-esquerdo": "Extremo",
     atacante: "Centroavante",
-    "ponta-de-lança": "Centroavante",
-    centroavante: "Centroavante",
+    "centroavante": "Centroavante",
     "2º atacante": "2º Atacante",
   };
 
-  const normalized = ogolPos.toLowerCase().trim();
-  return posMap[normalized] || ogolPos;
+  const lower = ogolPos.toLowerCase().trim();
+  return posMap[lower] || ogolPos;
 }
 
 function mapPe(ogolPe: string): string {
   const peMap: Record<string, string> = {
     destro: "Destro",
-    direito: "Destro",
     canhoto: "Canhoto",
-    esquerdo: "Canhoto",
     ambidestro: "Ambidestro",
+    "pé direito": "Destro",
+    "pé esquerdo": "Canhoto",
   };
 
-  const normalized = ogolPe.toLowerCase().trim();
-  return peMap[normalized] || ogolPe;
+  const lower = ogolPe.toLowerCase().trim();
+  return peMap[lower] || ogolPe;
 }
 
 function parseDate(dateStr: string | null): string | null {
   if (!dateStr) return null;
 
+  // Tenta formato YYYY-MM-DD (ISO)
+  let match = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) {
+    const [_, year, month, day] = match;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
   // Tenta formato DD/MM/YYYY
-  const match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (match) {
     const [_, day, month, year] = match;
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -131,25 +166,35 @@ export async function fetchOgolData(url: string): Promise<OgolData> {
       return { error: `Erro ao acessar Ogol: ${response.status}` };
     }
 
-    const html = await response.text();
+    // Decodificar HTML corretamente de ISO-8859-1
+    const arrayBuffer = await response.arrayBuffer();
+    const decoder = new TextDecoder("iso-8859-1");
+    const html = decoder.decode(arrayBuffer);
 
     // Extrair dados usando regex
     const nome = extractField(html, "Nome");
     const posicaoRaw = extractField(html, "Posição");
     const dataRaw = extractField(html, "Data de Nascimento");
-    const alturaRaw = extractField(html, "Altura");
-    const peRaw = extractField(html, "Pé");
-    const clubeRaw = extractField(html, "Clube");
+    const alturaRaw = extractField(html, "Altura / Peso");
+    const peRaw = extractField(html, "Pé preferencial");
+    const clubeRaw = extractField(html, "Clube atual");
 
     const dataNascimento = parseDate(dataRaw);
     const idade = calculateAge(dataNascimento);
+
+    // Extrair apenas altura (antes do /)
+    let altura: string | undefined;
+    if (alturaRaw) {
+      const heightMatch = alturaRaw.match(/(\d+)\s*cm/);
+      altura = heightMatch ? heightMatch[1] : alturaRaw;
+    }
 
     return {
       nome: nome || undefined,
       posicao: posicaoRaw ? mapPosicao(posicaoRaw) : undefined,
       dataNascimento: dataNascimento || undefined,
       idade: idade || undefined,
-      altura: alturaRaw ? alturaRaw.replace(/[^\d.,]/g, "") : undefined,
+      altura: altura || undefined,
       pe: peRaw ? mapPe(peRaw) : undefined,
       clube: clubeRaw || undefined,
     };
