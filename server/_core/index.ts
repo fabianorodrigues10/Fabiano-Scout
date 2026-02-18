@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerPdfRoutes } from "../pdf-report";
+import { registerExcelRoutes } from "../excel-report";
 import { registerOgolRoutes } from "../ogol-scraper";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -58,6 +59,7 @@ async function startServer() {
 
   registerOAuthRoutes(app);
   registerPdfRoutes(app);
+  registerExcelRoutes(app);
   registerOgolRoutes(app);
 
   app.get("/api/health", (_req, res) => {

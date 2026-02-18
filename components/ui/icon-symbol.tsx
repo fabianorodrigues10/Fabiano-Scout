@@ -39,6 +39,7 @@ const MAPPING = {
   "figure.walk": "directions-walk",
   "doc.text.fill": "description",
   "square.and.arrow.up": "share",
+  "square.and.arrow.down": "download",
 } as IconMapping;
 
 /**

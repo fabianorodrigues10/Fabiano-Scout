@@ -15,7 +15,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
-import { generateReport } from "@/lib/report";
+import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
 
 const FAIXAS_IDADE = [
@@ -95,7 +95,9 @@ export default function HomeScreen() {
   }, [refetch]);
 
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingExcel, setGeneratingExcel] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
+  const [sortBy, setSortBy] = useState<"nome" | "idade" | "altura">("nome");
 
   const handleAddAtleta = () => {
     router.push("/atleta/novo" as any);
@@ -131,6 +133,44 @@ export default function HomeScreen() {
   const handleAtletaPress = (id: number) => {
     router.push(`/atleta/detalhes/${id}` as any);
   };
+
+  const handleExcelPress = () => {
+    if (filteredAtletas.length === 0) {
+      Alert.alert("Sem atletas", "Nenhum atleta encontrado com os filtros atuais.");
+      return;
+    }
+    handleConfirmExcel();
+  };
+
+  const handleConfirmExcel = async () => {
+    setGeneratingExcel(true);
+    try {
+      const ids = filteredAtletas.map((a) => a.id);
+      const filters = {
+        posicao: selectedPosicao || "Todas",
+        faixaIdade: selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas",
+        clube: selectedClube || "Todos",
+        busca: searchQuery || undefined,
+      };
+      await generateExcel(ids, filters);
+    } catch (error: any) {
+      Alert.alert("Erro", error.message || "Não foi possível gerar a planilha.");
+    } finally {
+      setGeneratingExcel(false);
+    }
+  };
+
+  const sortedAtletas = useMemo(() => {
+    const sorted = [...filteredAtletas];
+    if (sortBy === "nome") {
+      sorted.sort((a, b) => a.nome.localeCompare(b.nome));
+    } else if (sortBy === "idade") {
+      sorted.sort((a, b) => Number(b.idade ?? 0) - Number(a.idade ?? 0));
+    } else if (sortBy === "altura") {
+      sorted.sort((a, b) => Number(b.altura ?? 0) - Number(a.altura ?? 0));
+    }
+    return sorted;
+  }, [filteredAtletas, sortBy]);
 
   return (
     <ScreenContainer className="bg-background">
@@ -351,9 +391,61 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Seção de Ordenação e Exportação */}
+      <View className="px-4 py-3 flex-row justify-between items-center border-b border-border">
+        <View className="flex-row gap-2 flex-1">
+          <TouchableOpacity
+            onPress={() => setSortBy("nome")}
+            style={{
+              backgroundColor: sortBy === "nome" ? colors.primary : colors.surface,
+              borderWidth: sortBy === "nome" ? 0 : 1,
+              borderColor: colors.border,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+            }}
+          >
+            <Text style={{ color: sortBy === "nome" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Nome</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSortBy("idade")}
+            style={{
+              backgroundColor: sortBy === "idade" ? colors.primary : colors.surface,
+              borderWidth: sortBy === "idade" ? 0 : 1,
+              borderColor: colors.border,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+            }}
+          >
+            <Text style={{ color: sortBy === "idade" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Idade</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSortBy("altura")}
+            style={{
+              backgroundColor: sortBy === "altura" ? colors.primary : colors.surface,
+              borderWidth: sortBy === "altura" ? 0 : 1,
+              borderColor: colors.border,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+            }}
+          >
+            <Text style={{ color: sortBy === "altura" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Altura</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          onPress={handleExcelPress}
+          disabled={generatingExcel}
+          style={{ marginLeft: 8 }}
+        >
+          <IconSymbol name="square.and.arrow.down" size={20} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+
       {/* Lista de Atletas */}
       <FlatList
-        data={filteredAtletas}
+        data={sortedAtletas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }: { item: any }) => (
           <TouchableOpacity
