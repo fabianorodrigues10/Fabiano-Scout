@@ -7,7 +7,7 @@ import { Request, Response } from "express";
 export interface OgolPlayerData {
   nome: string | null;
   posicao: string | null;
-  dataNascimento: string | null; // ISO format YYYY-MM-DD
+  dataNascimento: string | null; // formato dd/mm/aa (ex: 28/03/97)
   idade: number | null;
   altura: number | null; // em metros (ex: 1.76)
   pe: string | null; // "direito" | "esquerdo" | "ambidestro"
@@ -68,32 +68,34 @@ function mapPe(ogolPe: string | null): string | null {
 }
 
 /**
- * Extrai o valor de um campo do HTML do Ogol.
+ * Extrai o valor de um campo específico do HTML do Ogol.
+ * Usa padrões específicos baseados na estrutura real do HTML.
  */
-function extractField(html: string, label: string): string | null {
-  // Find the label position first
-  const labelRegex = new RegExp(label, "i");
-  const labelMatch = html.match(labelRegex);
-  if (!labelMatch || labelMatch.index === undefined) return null;
+function extractField(html: string, labelText: string): string | null {
+  // Escapar caracteres especiais no label para usar em regex
+  const escapedLabel = labelText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // Get everything after the label
-  const afterLabel = html.substring(
-    labelMatch.index + labelMatch[0].length
+  // Pattern 1: Label seguido por card-data__value (caso comum)
+  const pattern1 = new RegExp(
+    `card-data__label"[^>]*>${escapedLabel}<\\/span>\\s*<span class="card-data__value"[^>]*>([^<]+)<`,
+    "i"
   );
+  const match1 = html.match(pattern1);
+  if (match1?.[1]) {
+    const text = match1[1].trim();
+    if (text.length > 0) return text;
+  }
 
-  // Pattern 1: card-data__value content (most common in real Ogol HTML)
-  const valueMatch = afterLabel.match(
-    /card-data__value[s]?"[^>]*>(?:\s*(?:<[^>]+>\s*)*)?([^<]+)/i
+  // Pattern 2: Label seguido por card-data__values (plural, usado para Posição)
+  const pattern2 = new RegExp(
+    `card-data__label"[^>]*>${escapedLabel}<\\/span>\\s*<span class="card-data__values"[^>]*>\\s*<span class="card-data__value"[^>]*>([^<]+)<`,
+    "i"
   );
-  if (valueMatch?.[1]?.trim()) return valueMatch[1].trim();
-
-  // Pattern 2: direct text after closing tag
-  const directMatch = afterLabel.match(/<\/span>\s*<[^>]+>\s*([^<]+)/i);
-  if (directMatch?.[1]?.trim()) return directMatch[1].trim();
-
-  // Pattern 3: plain text on same line
-  const plainMatch = afterLabel.match(/^\s+([^\n<]+)/);
-  if (plainMatch?.[1]?.trim()) return plainMatch[1].trim();
+  const match2 = html.match(pattern2);
+  if (match2?.[1]) {
+    const text = match2[1].trim();
+    if (text.length > 0) return text;
+  }
 
   return null;
 }
@@ -122,40 +124,35 @@ function parseOgolHtml(html: string): OgolPlayerData {
   const dataRaw = extractField(html, "Data de Nascimento");
   if (dataRaw) {
     const dataMatch = dataRaw.match(
-      /(\d{4}-\d{2}-\d{2})\s*\((\d+)\s*anos?\)/
+      /(\d{4})-(\d{2})-(\d{2})\s*\((\d+)\s*anos?\)/
     );
     if (dataMatch) {
-      result.dataNascimento = dataMatch[1];
-      result.idade = parseInt(dataMatch[2], 10);
+      const yy = dataMatch[1].slice(2);
+      result.dataNascimento = `${dataMatch[3]}/${dataMatch[2]}/${yy}`; // dd/mm/aa
+      result.idade = parseInt(dataMatch[4], 10);
     }
   }
 
   // Posição
-  const posRaw = extractField(html, "Posi(?:ção|çao|cao|ção)");
+  const posRaw = extractField(html, "Posição");
   if (posRaw && posRaw.length < 30) {
     result.posicao = mapPosicao(posRaw);
   }
 
   // Pé preferencial
-  const peRaw = extractField(html, "P(?:é|e) preferencial");
+  const peRaw = extractField(html, "Pé preferencial");
   if (peRaw) {
     result.pe = mapPe(peRaw);
   }
 
-  // Altura
-  const alturaRaw = extractField(html, "Altura");
+  // Altura / Peso
+  const alturaRaw = extractField(html, "Altura / Peso");
   if (alturaRaw) {
     const altMatch = alturaRaw.match(/(\d{3})\s*cm/);
     if (altMatch) {
       const cm = parseInt(altMatch[1], 10);
       result.altura = parseFloat((cm / 100).toFixed(2));
     }
-  }
-
-  // Clube atual
-  const clubeRaw = extractField(html, "Clube atual");
-  if (clubeRaw && clubeRaw !== "Sem Clube" && clubeRaw.length > 1) {
-    result.clube = clubeRaw;
   }
 
   return result;
