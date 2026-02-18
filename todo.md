@@ -166,3 +166,9 @@
 - [x] Investigar falha no scraping do Ogol (proteção Cloudflare bloqueia fetch direto)
 - [x] Implementar solução alternativa que funcione no celular (WebView oculta)
 - [x] Testar com links reais de atletas do Ogol (19 testes passando)
+
+## Mudanças de Filtros e Relatório
+- [x] Permitir múltiplas seleções de clubes nos filtros
+- [x] Permitir múltiplas seleções de faixas de idade nos filtros
+- [x] Remover fichas individuais do PDF
+- [x] Manter apenas tabela resumida no relatório

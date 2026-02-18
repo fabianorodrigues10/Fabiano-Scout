@@ -298,7 +298,7 @@ export function registerPdfRoutes(app: any) {
       let y = drawHeader(doc, data.length, filters || {});
       y = drawStatsBar(doc, data, y);
       y = drawTable(doc, data, y + 10);
-      drawCards(doc, data, y + 10);
+      // Fichas individuais removidas - apenas tabela resumida
       drawFooter(doc);
 
       doc.end();
