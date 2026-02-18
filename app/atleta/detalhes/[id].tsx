@@ -150,7 +150,7 @@ export default function AtletaDetalhesScreen() {
 
         {/* Conteúdo Principal */}
         <View className="px-4 pb-8">
-          {/* Card: Informações Básicas */}
+          {/* Card: ID e Informações Básicas */}
           <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
             <View className="flex-row items-center mb-4">
               <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
@@ -161,6 +161,7 @@ export default function AtletaDetalhesScreen() {
               </Text>
             </View>
 
+            <InfoCard icon="number" label="ID" value={String(atleta.id)} />
             <InfoCard icon="person.fill" label="Nome" value={atleta.nome} />
             {atleta.posicao && (
               <InfoCard icon="target" label="Posição Principal" value={atleta.posicao} />

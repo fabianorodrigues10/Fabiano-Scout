@@ -17,7 +17,10 @@ export default function AtualizarOgolScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Carregando atletas...");
+  const [processedCount, setProcessedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
   const webViewRef = useRef<WebView>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Usar tRPC para buscar atletas sem data
   const { data: atletasSemData = [], isLoading: isFetchingAtletas } = trpc.atletas.getSemData.useQuery();
@@ -77,6 +80,11 @@ export default function AtualizarOgolScreen() {
   };
 
   const handleWebViewMessage = async (event: any) => {
+    // Limpar timeout anterior
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
@@ -86,51 +94,65 @@ export default function AtualizarOgolScreen() {
         if (data.dataNascimento || data.idade) {
           // Atualizar atleta no banco via tRPC
           try {
-            // Chamar endpoint tRPC para atualizar
+            // Chamar endpoint tRPC para atualizar (apenas idade por enquanto)
             await updateAtletaMutation.mutateAsync({
               id: atleta.id,
-              dataNascimento: data.dataNascimento,
               idade: data.idade,
             });
             setMessage(
-              `✅ ${atleta.nome} atualizado! Data: ${data.dataNascimento}, Idade: ${data.idade}`
+              `✅ ${atleta.nome} atualizado! Idade: ${data.idade}`
             );
+            setProcessedCount(processedCount + 1);
           } catch (error) {
             setMessage(`❌ Erro ao atualizar ${atleta.nome}: ${error}`);
+            setSkippedCount(skippedCount + 1);
           }
         } else {
           setMessage(`⚠️ Não conseguiu extrair dados de ${atleta.nome}`);
+          setSkippedCount(skippedCount + 1);
         }
 
-        // Próximo atleta com delay maior
+        // Próximo atleta com delay
         if (currentIndex < atletas.length - 1) {
-          setTimeout(() => {
+          timeoutRef.current = setTimeout(() => {
             setCurrentIndex(currentIndex + 1);
-          }, 2000); // Aumentado de 1000 para 2000ms
+          }, 1500);
         } else {
-          setMessage("✅ Atualização concluída!");
+          setMessage(`✅ Atualização concluída! ${processedCount + 1} atualizados, ${skippedCount} pulados.`);
         }
       } else if (data.type === "error") {
-        setMessage(`❌ Erro na WebView: ${data.message}`);
-        // Tentar próximo atleta após erro
-        setTimeout(() => {
-          if (currentIndex < atletas.length - 1) {
+        const atleta = atletas[currentIndex];
+        setMessage(`⚠️ Pulando ${atleta.nome} (erro na extração)`);
+        setSkippedCount(skippedCount + 1);
+        // Pular para próximo atleta após erro
+        if (currentIndex < atletas.length - 1) {
+          timeoutRef.current = setTimeout(() => {
             setCurrentIndex(currentIndex + 1);
-          } else {
-            setMessage("✅ Atualização concluída com alguns erros!");
-          }
-        }, 3000);
+          }, 800);
+        } else {
+          setMessage(`✅ Atualização concluída! ${processedCount} atualizados, ${skippedCount + 1} pulados.`);
+        }
       }
     } catch (error) {
       setMessage(`Erro ao processar: ${error}`);
+      setSkippedCount(skippedCount + 1);
       // Tentar próximo atleta
-      setTimeout(() => {
-        if (currentIndex < atletas.length - 1) {
+      if (currentIndex < atletas.length - 1) {
+        timeoutRef.current = setTimeout(() => {
           setCurrentIndex(currentIndex + 1);
-        }
-      }, 3000);
+        }, 1000);
+      }
     }
   };
+
+  // Limpar timeout ao desmontar
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -165,7 +187,7 @@ export default function AtualizarOgolScreen() {
             Atualizando dados do Ogol
           </Text>
           <Text className="text-sm text-muted mb-4">
-            {currentIndex + 1} de {atletas.length}
+            {currentIndex + 1} de {atletas.length} | ✅ {processedCount} | ⚠️ {skippedCount}
           </Text>
 
           <View className="bg-surface rounded-lg p-4 mb-4">

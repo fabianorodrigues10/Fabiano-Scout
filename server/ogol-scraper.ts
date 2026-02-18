@@ -12,6 +12,7 @@ export interface OgolPlayerData {
   altura: number | null; // em metros (ex: 1.76)
   pe: string | null; // "direito" | "esquerdo" | "ambidestro"
   clube: string | null;
+  fotoUrl: string | null; // URL da foto do atleta
 }
 
 /**
@@ -112,6 +113,7 @@ function parseOgolHtml(html: string): OgolPlayerData {
     altura: null,
     pe: null,
     clube: null,
+    fotoUrl: null,
   };
 
   // Nome completo
@@ -152,6 +154,30 @@ function parseOgolHtml(html: string): OgolPlayerData {
     if (altMatch) {
       const cm = parseInt(altMatch[1], 10);
       result.altura = parseFloat((cm / 100).toFixed(2));
+    }
+  }
+
+  // Foto do atleta - múltiplos padrões
+  const fotoPatterns = [
+    /<img[^>]*class="[^"]*player[^"]*"[^>]*src="([^"]+)"/i,
+    /<img[^>]*class="[^"]*photo[^"]*"[^>]*src="([^"]+)"/i,
+    /<img[^>]*class="[^"]*jogador[^"]*"[^>]*src="([^"]+)"/i,
+    /<img[^>]*src="([^"]*\/jogador\/[^"]+)"/i,
+    /<img[^>]*src="([^"]*\/player[^"]+)"/i,
+  ];
+  
+  for (const pattern of fotoPatterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) {
+      let fotoUrl = match[1].trim();
+      // Converter URLs relativas em absolutas
+      if (fotoUrl.startsWith("/")) {
+        fotoUrl = "https://www.ogol.com.br" + fotoUrl;
+      } else if (!fotoUrl.startsWith("http")) {
+        fotoUrl = "https://www.ogol.com.br/" + fotoUrl;
+      }
+      result.fotoUrl = fotoUrl;
+      break;
     }
   }
 

@@ -127,6 +127,9 @@ export const appRouter = router({
           updateData.altura = data.altura.toString();
         }
         
+        // Manter dataNascimento como string (formato dd/mm/aa)
+        // Não converter para Date - deixar o banco armazenar como está
+        
         await db.updateAtleta(id, ctx.user?.id || 1, updateData);
         return { success: true };
       }),

@@ -55,6 +55,25 @@ export default function SettingsScreen() {
                 color="#FF6B35"
               />
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push("/testar-foto" as any)}
+              className="bg-blue-50 rounded-xl p-4 border border-blue-200 flex-row justify-between items-center"
+            >
+              <View className="flex-1">
+                <Text className="text-base font-medium text-blue-900">
+                  Testar Extracao de Foto
+                </Text>
+                <Text className="text-sm text-blue-700 mt-1">
+                  Teste a extracao de foto do Ogol
+                </Text>
+              </View>
+              <IconSymbol
+                name="chevron.right"
+                size={20}
+                color="#1e40af"
+              />
+            </TouchableOpacity>
           </View>
           
           {/* Seção de Campos */}
@@ -66,10 +85,10 @@ export default function SettingsScreen() {
             <TouchableOpacity className="bg-surface rounded-xl p-4 mb-2 border border-border flex-row justify-between items-center">
               <View className="flex-1">
                 <Text className="text-base font-medium text-foreground">
-                  Campos Padrão
+                  Campos Padrao
                 </Text>
                 <Text className="text-sm text-muted mt-1">
-                  Ativar ou desativar campos padrão
+                  Ativar ou desativar campos padrao
                 </Text>
               </View>
               <IconSymbol
