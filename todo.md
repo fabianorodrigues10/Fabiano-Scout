@@ -166,3 +166,9 @@
 - [x] Investigar falha no scraping do Ogol (proteção Cloudflare bloqueia fetch direto)
 - [x] Implementar solução alternativa que funcione no celular (WebView oculta)
 - [x] Testar com links reais de atletas do Ogol (19 testes passando)
+
+
+## Ogol Web - Fallback para Web
+- [x] Implementar fallback para web: abre Ogol em nova aba
+- [x] Manter WebView no celular (funciona perfeitamente)
+- [x] Testar na web e celular

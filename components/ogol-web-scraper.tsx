@@ -270,8 +270,14 @@ export function OgolWebScraper({ url, onResult, onError, onLoadStart }: OgolWebS
   // Não renderiza se não tem URL
   if (!url) return null;
 
-  // Na web, WebView não funciona - mostra nada (o fallback de fetch será usado)
-  if (Platform.OS === "web") return null;
+  // Na web, abre o Ogol em nova aba para o usuário copiar manualmente
+  if (Platform.OS === "web") {
+    if (url && typeof window !== "undefined") {
+      window.open(url, "_blank");
+      onError("Página do Ogol aberta em nova aba. Copie os dados manualmente ou use o celular para auto-preenchimento.");
+    }
+    return null;
+  }
 
   return (
     <View style={{ height: 0, width: 0, overflow: "hidden", position: "absolute" }}>
