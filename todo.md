@@ -161,3 +161,8 @@
 - [x] Mostrar resumo dos filtros aplicados no modal
 - [x] Mostrar quantidade de atletas que serão incluídos no relatório
 - [x] Botões "Cancelar" e "Gerar Relatório" no modal
+
+## Bug: Auto-preenchimento Ogol não funciona
+- [x] Investigar falha no scraping do Ogol (proteção Cloudflare bloqueia fetch direto)
+- [x] Implementar solução alternativa que funcione no celular (WebView oculta)
+- [x] Testar com links reais de atletas do Ogol (19 testes passando)

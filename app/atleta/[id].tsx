@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,19 +15,17 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
-import { fetchOgolData } from "@/lib/ogol";
+import { OgolWebScraper, type OgolPlayerData } from "@/components/ogol-web-scraper";
 
 const POSICOES = [
   "Goleiro",
-  "Lateral Direito",
-  "Lateral Esquerdo",
+  "Lateral",
   "Zagueiro",
   "Volante",
   "Meia",
-  "Atacante",
-  "Ponta Direita",
-  "Ponta Esquerda",
+  "Extremo",
   "Centroavante",
+  "2º Atacante",
 ];
 
 const PES = ["direito", "esquerdo", "ambidestro"];
@@ -53,6 +51,9 @@ export default function AtletaFormScreen() {
   const [escala, setEscala] = useState("");
   const [valencia, setValencia] = useState("");
   const [ogolLoading, setOgolLoading] = useState(false);
+
+  // Estado para WebView scraper
+  const [ogolScrapeUrl, setOgolScrapeUrl] = useState<string | null>(null);
   
   // Query para buscar atleta (se editando)
   const { data: atleta, isLoading: loadingAtleta } = trpc.atletas.getById.useQuery(
@@ -72,7 +73,6 @@ export default function AtletaFormScreen() {
       setPosicao(atleta.posicao || "");
       setSegundaPosicao(atleta.segundaPosicao || "");
       setClube(atleta.clube || "");
-      // Converte ISO date para dd/mm/aa para exibição no formulário
       if (atleta.dataNascimento) {
         const d = new Date(atleta.dataNascimento);
         const dd = String(d.getDate()).padStart(2, '0');
@@ -120,7 +120,62 @@ export default function AtletaFormScreen() {
     }
   }, [dataNascimento]);
 
-  // Preencher dados do Ogol
+  // Aplica dados extraídos do Ogol ao formulário
+  const applyOgolData = useCallback((data: OgolPlayerData) => {
+    setOgolLoading(false);
+    setOgolScrapeUrl(null);
+    
+    let preenchidos = 0;
+
+    if (data.nome && !nome.trim()) {
+      setNome(data.nome);
+      preenchidos++;
+    }
+    if (data.posicao && !posicao.trim()) {
+      setPosicao(data.posicao);
+      preenchidos++;
+    }
+    if (data.dataNascimento && !dataNascimento.trim()) {
+      setDataNascimento(data.dataNascimento);
+      preenchidos++;
+    }
+    if (data.idade != null && !idade.trim()) {
+      setIdade(data.idade.toString());
+      preenchidos++;
+    }
+    if (data.altura != null && !altura.trim()) {
+      setAltura(data.altura.toString());
+      preenchidos++;
+    }
+    if (data.pe && !pe.trim()) {
+      setPe(data.pe);
+      preenchidos++;
+    }
+    if (data.clube && !clube.trim()) {
+      setClube(data.clube);
+      preenchidos++;
+    }
+
+    if (preenchidos > 0) {
+      Alert.alert(
+        "Dados Importados",
+        `${preenchidos} campo(s) preenchido(s) automaticamente a partir do Ogol.\n\nRevise os dados e ajuste o que for necessário.`
+      );
+    } else {
+      Alert.alert(
+        "Nenhum campo novo",
+        "Todos os campos já estavam preenchidos. Os dados do Ogol não sobrescrevem campos existentes."
+      );
+    }
+  }, [nome, posicao, dataNascimento, idade, altura, pe, clube]);
+
+  const handleOgolError = useCallback((error: string) => {
+    setOgolLoading(false);
+    setOgolScrapeUrl(null);
+    Alert.alert("Erro ao importar", error);
+  }, []);
+
+  // Preencher dados do Ogol - usa WebView no nativo, fetch na web
   const handlePreencherOgol = async () => {
     if (!link.trim()) {
       Alert.alert("Atenção", "Cole o link do Ogol no campo Link antes de preencher.");
@@ -132,65 +187,56 @@ export default function AtletaFormScreen() {
     }
 
     setOgolLoading(true);
-    try {
-      const result = await fetchOgolData(link.trim());
 
-      if (result.success && result.data) {
-        const d = result.data;
-        let preenchidos = 0;
-
-        if (d.nome && !nome.trim()) {
-          setNome(d.nome);
-          preenchidos++;
+    if (Platform.OS === "web") {
+      // Na web, tenta fetch direto (pode funcionar dependendo do CORS)
+      try {
+        const response = await fetch(link.trim(), {
+          headers: {
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+        });
+        if (response.ok) {
+          const html = await response.text();
+          // Importa o parser do lib/ogol.ts
+          const { parseOgolHtml } = await import("@/lib/ogol");
+          const data = parseOgolHtml(html);
+          if (data.nome || data.posicao || data.dataNascimento) {
+            applyOgolData(data);
+            return;
+          }
         }
-        if (d.posicao && !posicao.trim()) {
-          setPosicao(d.posicao);
-          preenchidos++;
-        }
-        if (d.dataNascimento && !dataNascimento.trim()) {
-          setDataNascimento(d.dataNascimento);
-          preenchidos++;
-        }
-        if (d.idade != null && !idade.trim()) {
-          setIdade(d.idade.toString());
-          preenchidos++;
-        }
-        if (d.altura != null && !altura.trim()) {
-          // Converte de metros para cm string (ex: 1.76 -> "176")
-          const cm = Math.round(d.altura * 100);
-          setAltura(cm.toString());
-          preenchidos++;
-        }
-        if (d.pe && !pe.trim()) {
-          setPe(d.pe);
-          preenchidos++;
-        }
-        if (d.clube && !clube.trim()) {
-          setClube(d.clube);
-          preenchidos++;
-        }
-
-        if (preenchidos > 0) {
-          Alert.alert(
-            "Dados Importados",
-            `${preenchidos} campo(s) preenchido(s) automaticamente a partir do Ogol.\n\nRevise os dados e ajuste o que for necessário.`
-          );
-        } else {
-          Alert.alert(
-            "Nenhum campo novo",
-            "Todos os campos já estavam preenchidos. Os dados do Ogol não sobrescrevem campos existentes."
-          );
-        }
-      } else {
-        Alert.alert(
-          "Erro ao importar",
-          result.error || "Não foi possível extrair os dados do Ogol. Tente novamente."
-        );
+      } catch (e) {
+        console.log("[Ogol] Web fetch failed", e);
       }
-    } catch (error: any) {
-      Alert.alert("Erro", error.message || "Erro inesperado ao acessar o Ogol.");
-    } finally {
+
+      // Fallback: tenta via servidor
+      try {
+        const serverUrl = `${(globalThis as any).__API_BASE_URL || "http://127.0.0.1:3000"}/api/ogol/scrape`;
+        const response = await fetch(serverUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: link.trim() }),
+        });
+        if (response.ok) {
+          const jsonResult = await response.json();
+          if (jsonResult.success && jsonResult.data) {
+            applyOgolData(jsonResult.data);
+            return;
+          }
+        }
+      } catch (e) {
+        console.log("[Ogol] Server fetch also failed", e);
+      }
+
       setOgolLoading(false);
+      Alert.alert(
+        "Não disponível na web",
+        "A importação automática do Ogol funciona melhor no celular (via Expo Go). Na web, o site do Ogol bloqueia a conexão.\n\nPreencha os dados manualmente ou teste no celular."
+      );
+    } else {
+      // No celular, usa WebView oculta
+      setOgolScrapeUrl(link.trim());
     }
   };
   
@@ -201,7 +247,6 @@ export default function AtletaFormScreen() {
     }
     
     try {
-      // Converte dd/mm/aa para ISO date string para o backend
       let dataNascimentoISO: string | undefined = undefined;
       if (dataNascimento && dataNascimento.length === 8) {
         const parts = dataNascimento.split("/");
@@ -269,6 +314,20 @@ export default function AtletaFormScreen() {
       ]
     );
   };
+
+  // Máscara para data dd/mm/aa
+  const handleDataChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9]/g, "");
+    let formatted = "";
+    if (cleaned.length <= 2) {
+      formatted = cleaned;
+    } else if (cleaned.length <= 4) {
+      formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2);
+    } else {
+      formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) + "/" + cleaned.slice(4, 6);
+    }
+    setDataNascimento(formatted);
+  };
   
   if (loadingAtleta) {
     return (
@@ -284,6 +343,14 @@ export default function AtletaFormScreen() {
   return (
     <ScreenContainer>
       <View className="flex-1">
+        {/* WebView oculta para scraping do Ogol */}
+        <OgolWebScraper
+          url={ogolScrapeUrl}
+          onResult={applyOgolData}
+          onError={handleOgolError}
+          onLoadStart={() => setOgolLoading(true)}
+        />
+
         {/* Header */}
         <View className="px-4 pt-4 pb-3 bg-background border-b border-border flex-row justify-between items-center">
           <View className="flex-row items-center flex-1">
@@ -318,6 +385,7 @@ export default function AtletaFormScreen() {
               onChangeText={setLink}
               keyboardType="url"
               autoCapitalize="none"
+              style={{ color: colors.foreground }}
             />
             
             {/* Botão Preencher do Ogol - aparece quando link contém ogol.com */}
@@ -348,6 +416,12 @@ export default function AtletaFormScreen() {
                 )}
               </TouchableOpacity>
             )}
+
+            {showOgolButton && Platform.OS !== "web" && (
+              <Text className="text-xs text-muted mt-1 text-center">
+                Abre a página do Ogol em segundo plano e extrai os dados automaticamente
+              </Text>
+            )}
           </View>
 
           {/* Separador visual */}
@@ -370,6 +444,7 @@ export default function AtletaFormScreen() {
               placeholderTextColor={colors.muted}
               value={nome}
               onChangeText={setNome}
+              style={{ color: colors.foreground }}
             />
           </View>
           
@@ -378,112 +453,148 @@ export default function AtletaFormScreen() {
             <Text className="text-sm font-medium text-foreground mb-2">
               Posição Principal
             </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Atacante"
-              placeholderTextColor={colors.muted}
-              value={posicao}
-              onChangeText={setPosicao}
-            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row gap-2">
+                {POSICOES.map((pos) => (
+                  <TouchableOpacity
+                    key={pos}
+                    onPress={() => setPosicao(posicao === pos ? "" : pos)}
+                    style={{
+                      backgroundColor: posicao === pos ? colors.primary : colors.surface,
+                      borderWidth: posicao === pos ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: posicao === pos ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {pos}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
-          
+
           {/* Segunda Posição */}
           <View className="mb-4">
             <Text className="text-sm font-medium text-foreground mb-2">
-              Segunda Posição
+              Segunda Posição (opcional)
             </Text>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Ponta Esquerda"
+              placeholder="Ex: Meia"
               placeholderTextColor={colors.muted}
               value={segundaPosicao}
               onChangeText={setSegundaPosicao}
+              style={{ color: colors.foreground }}
             />
           </View>
           
           {/* Clube */}
           <View className="mb-4">
             <Text className="text-sm font-medium text-foreground mb-2">
-              Clube
+              Clube Atual
             </Text>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Al-Hilal"
+              placeholder="Ex: Flamengo/RJ"
               placeholderTextColor={colors.muted}
               value={clube}
               onChangeText={setClube}
+              style={{ color: colors.foreground }}
             />
           </View>
           
-          {/* Data de Nascimento */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Data de Nascimento
-            </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="dd/mm/aa (Ex: 05/02/92)"
-              placeholderTextColor={colors.muted}
-              value={dataNascimento}
-              onChangeText={(text) => {
-                // Auto-format: add slashes as user types
-                const digits = text.replace(/\D/g, "").slice(0, 6);
-                let formatted = digits;
-                if (digits.length > 4) {
-                  formatted = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
-                } else if (digits.length > 2) {
-                  formatted = digits.slice(0, 2) + "/" + digits.slice(2);
-                }
-                setDataNascimento(formatted);
-              }}
-              keyboardType="numeric"
-              maxLength={8}
-            />
+          {/* Data de Nascimento e Idade */}
+          <View className="flex-row gap-3 mb-4">
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Data Nasc. (dd/mm/aa)
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="01/03/97"
+                placeholderTextColor={colors.muted}
+                value={dataNascimento}
+                onChangeText={handleDataChange}
+                keyboardType="numeric"
+                maxLength={8}
+                style={{ color: colors.foreground }}
+              />
+            </View>
+            <View className="w-24">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Idade
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Auto"
+                placeholderTextColor={colors.muted}
+                value={idade}
+                onChangeText={setIdade}
+                keyboardType="numeric"
+                style={{ color: colors.foreground, backgroundColor: idade ? colors.surface : colors.surface }}
+              />
+            </View>
           </View>
           
-          {/* Idade */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Idade
-            </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Calculada automaticamente"
-              placeholderTextColor={colors.muted}
-              value={idade}
-              onChangeText={setIdade}
-              keyboardType="numeric"
-              editable={!dataNascimento}
-            />
-          </View>
-          
-          {/* Altura */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Altura (cm)
-            </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: 175"
-              placeholderTextColor={colors.muted}
-              value={altura}
-              onChangeText={setAltura}
-              keyboardType="numeric"
-            />
-          </View>
-          
-          {/* Pé */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Pé Preferencial
-            </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="direito, esquerdo ou ambidestro"
-              placeholderTextColor={colors.muted}
-              value={pe}
-              onChangeText={setPe}
-            />
+          {/* Altura e Pé */}
+          <View className="flex-row gap-3 mb-4">
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Altura
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Ex: 1.76"
+                placeholderTextColor={colors.muted}
+                value={altura}
+                onChangeText={setAltura}
+                style={{ color: colors.foreground }}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Pé Preferencial
+              </Text>
+              <View className="flex-row gap-2">
+                {PES.map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setPe(pe === p ? "" : p)}
+                    style={{
+                      backgroundColor: pe === p ? colors.primary : colors.surface,
+                      borderWidth: pe === p ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      flex: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: pe === p ? "white" : colors.foreground,
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {p === "direito" ? "Dir" : p === "esquerdo" ? "Esq" : "Amb"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
           
           {/* Escala */}
@@ -493,66 +604,56 @@ export default function AtletaFormScreen() {
             </Text>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: A, B, C"
+              placeholder="Ex: A, B, C..."
               placeholderTextColor={colors.muted}
               value={escala}
               onChangeText={setEscala}
+              style={{ color: colors.foreground }}
             />
           </View>
-          
+
           {/* Valências */}
-          <View className="mb-6">
-            <View className="flex-row justify-between items-center mb-2">
-              <Text className="text-sm font-medium text-foreground">
-                Valências
-              </Text>
-              <Text className="text-xs text-muted">
-                {valencia.length}/500
-              </Text>
-            </View>
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Valências
+            </Text>
             <TextInput
               className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Descreva as características e valências do atleta (velocidade, técnica, visão de jogo, liderança...)"
+              placeholder="Descreva as características e valências do atleta (até 500 caracteres)..."
               placeholderTextColor={colors.muted}
               value={valencia}
               onChangeText={(text) => setValencia(text.slice(0, 500))}
               multiline
-              numberOfLines={6}
+              numberOfLines={4}
               textAlignVertical="top"
-              style={{ minHeight: 120 }}
+              style={{ color: colors.foreground, minHeight: 100 }}
             />
+            <Text className="text-xs text-muted text-right mt-1">
+              {valencia.length}/500
+            </Text>
           </View>
           
-          <View className="h-20" />
-        </ScrollView>
-        
-        {/* Botões fixos no rodapé */}
-        <View className="px-4 py-3 bg-background border-t border-border flex-row gap-3">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            disabled={isLoading}
-            className="flex-1 bg-surface rounded-lg py-3 border border-border"
-          >
-            <Text className="text-center font-semibold text-foreground">
-              Cancelar
-            </Text>
-          </TouchableOpacity>
-          
+          {/* Botão Salvar */}
           <TouchableOpacity
             onPress={handleSalvar}
             disabled={isLoading}
-            className="flex-1 bg-primary rounded-lg py-3"
-            style={{ opacity: isLoading ? 0.6 : 1 }}
+            className="rounded-xl py-4 items-center mb-4"
+            style={{
+              backgroundColor: isLoading ? colors.muted : colors.primary,
+            }}
           >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-center font-semibold text-white">
-                Salvar
+              <Text className="text-white font-bold text-base">
+                {isEdit ? "Salvar Alterações" : "Cadastrar Atleta"}
               </Text>
             )}
           </TouchableOpacity>
-        </View>
+
+          {/* Espaço extra no final */}
+          <View className="h-8" />
+        </ScrollView>
       </View>
     </ScreenContainer>
   );
