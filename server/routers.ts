@@ -36,6 +36,12 @@ export const appRouter = router({
         return db.getAtletaById(input.id, userId);
       }),
 
+    // Buscar atletas sem data de nascimento/idade
+    getSemData: publicProcedure.query(({ ctx }) => {
+      const userId = ctx.user?.id || 1;
+      return db.getAtletasSemData(userId);
+    }),
+
     // Buscar atletas com filtros
     search: publicProcedure
       .input(

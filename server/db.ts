@@ -17,6 +17,7 @@ import {
   InsertAtletaEmGrupo,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { isNull } from "drizzle-orm";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -644,4 +645,31 @@ export async function deleteMidiasDoAtleta(atletaId: number, userId: number) {
   await db
     .delete(midias)
     .where(and(eq(midias.atletaId, atletaId), eq(midias.userId, userId)));
+}
+
+
+/**
+ * Busca atletas sem data de nascimento ou idade
+ */
+export async function getAtletasSemData(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select({
+      id: atletas.id,
+      nome: atletas.nome,
+      link: atletas.link,
+    })
+    .from(atletas)
+    .where(
+      and(
+        eq(atletas.userId, userId),
+        or(
+          isNull(atletas.dataNascimento),
+          isNull(atletas.idade)
+        )!
+      )
+    )
+    .limit(100);
 }
