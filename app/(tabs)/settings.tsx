@@ -31,6 +31,32 @@ export default function SettingsScreen() {
             </View>
           )}
           
+          {/* Seção de Atualização */}
+          <View className="mb-6">
+            <Text className="text-lg font-semibold text-foreground mb-3">
+              Atualização de Dados
+            </Text>
+            
+            <TouchableOpacity
+              onPress={() => router.push("/atualizar-ogol" as any)}
+              className="bg-primary/10 rounded-xl p-4 border border-primary/30 flex-row justify-between items-center mb-4"
+            >
+              <View className="flex-1">
+                <Text className="text-base font-medium text-primary">
+                  Atualizar do Ogol
+                </Text>
+                <Text className="text-sm text-muted mt-1">
+                  Completar data de nascimento e idade
+                </Text>
+              </View>
+              <IconSymbol
+                name="chevron.right"
+                size={20}
+                color="#FF6B35"
+              />
+            </TouchableOpacity>
+          </View>
+          
           {/* Seção de Campos */}
           <View className="mb-6">
             <Text className="text-lg font-semibold text-foreground mb-3">
