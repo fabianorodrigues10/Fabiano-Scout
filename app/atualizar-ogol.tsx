@@ -25,15 +25,18 @@ export default function AtualizarOgolScreen() {
   const buscarAtletasSemData = async () => {
     try {
       setMessage("Buscando atletas sem data de nascimento...");
-      const response = await fetch("http://127.0.0.1:3000/api/atletas/sem-data");
+      const response = await fetch("http://127.0.0.1:3000/trpc/atletas.getSemData");
       const data = await response.json();
-      setAtletas(data);
+      const atletas = data.result?.data || [];
+      setAtletas(atletas);
       setLoading(false);
-      if (data.length === 0) {
+      if (atletas.length === 0) {
         setMessage("Todos os atletas já têm data de nascimento!");
+      } else {
+        setMessage(`${atletas.length} atletas encontrados. Iniciando atualização...`);
       }
     } catch (error) {
-      setMessage(`Erro ao buscar atletas: ${error}`);
+      setMessage(`Erro ao buscar atletas: ${error instanceof Error ? error.message : String(error)}`);
       setLoading(false);
     }
   };

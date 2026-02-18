@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -177,13 +178,23 @@ export default function HomeScreen() {
       {/* Header com Logo */}
       <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
         <View className="flex-row justify-between items-center mb-4">
-          <View>
-            <Text className="text-3xl font-bold text-primary">Fabiano Scout</Text>
-            <Text className="text-sm text-muted mt-1">Análise de Atletas</Text>
+          <View className="flex-row items-center gap-3 flex-1">
+            <Image
+              source={require("@/assets/images/fabiano-scout-logo.png")}
+              style={{ width: 48, height: 48 }}
+              resizeMode="contain"
+            />
+            <View>
+              <Text className="text-2xl font-bold text-primary">Fabiano Scout</Text>
+              <Text className="text-xs text-muted mt-0.5">Análise de Atletas</Text>
+            </View>
           </View>
-          <View className="w-12 h-12 rounded-full bg-primary/20 justify-center items-center">
-            <IconSymbol name="person.fill" size={24} color={colors.primary} />
-          </View>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings")}
+            className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+          >
+            <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Barra de Busca */}
