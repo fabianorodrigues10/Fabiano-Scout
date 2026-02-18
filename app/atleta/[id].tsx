@@ -16,6 +16,7 @@ import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { OgolWebScraper, type OgolPlayerData } from "@/components/ogol-web-scraper";
+import { getApiBaseUrl } from "@/constants/oauth";
 
 const POSICOES = [
   "Goleiro",
@@ -212,18 +213,24 @@ export default function AtletaFormScreen() {
 
       // Fallback: tenta via servidor
       try {
-        const serverUrl = `${(globalThis as any).__API_BASE_URL || "http://127.0.0.1:3000"}/api/ogol/scrape`;
+        const apiBaseUrl = getApiBaseUrl();
+        const serverUrl = `${apiBaseUrl}/api/ogol/scrape`;
+        console.log("[Ogol] Trying server URL:", serverUrl);
         const response = await fetch(serverUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: link.trim() }),
         });
+        console.log("[Ogol] Server response status:", response.status);
         if (response.ok) {
           const jsonResult = await response.json();
+          console.log("[Ogol] Server response data:", jsonResult);
           if (jsonResult.success && jsonResult.data) {
             applyOgolData(jsonResult.data);
             return;
           }
+        } else {
+          console.log("[Ogol] Server returned error:", response.statusText);
         }
       } catch (e) {
         console.log("[Ogol] Server fetch also failed", e);
