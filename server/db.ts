@@ -559,3 +559,89 @@ export async function removeAllAtletasDoGrupo(grupoId: number) {
     .delete(atletasEmGrupos)
     .where(eq(atletasEmGrupos.grupoId, grupoId));
 }
+
+// ==================== MÍDIA ====================
+
+import { midias, InsertMidia, Midia } from "../drizzle/schema";
+
+/**
+ * Busca todas as mídias de um atleta
+ */
+export async function getMidiasDoAtleta(atletaId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select()
+    .from(midias)
+    .where(and(eq(midias.atletaId, atletaId), eq(midias.userId, userId)))
+    .orderBy(desc(midias.createdAt));
+}
+
+/**
+ * Busca mídia por ID
+ */
+export async function getMidiaById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(midias)
+    .where(and(eq(midias.id, id), eq(midias.userId, userId)))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Cria nova mídia
+ */
+export async function createMidia(data: InsertMidia) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(midias).values(data);
+  return Number(result[0].insertId);
+}
+
+/**
+ * Atualiza mídia
+ */
+export async function updateMidia(
+  id: number,
+  userId: number,
+  data: Partial<InsertMidia>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(midias)
+    .set(data)
+    .where(and(eq(midias.id, id), eq(midias.userId, userId)));
+}
+
+/**
+ * Exclui mídia
+ */
+export async function deleteMidia(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(midias)
+    .where(and(eq(midias.id, id), eq(midias.userId, userId)));
+}
+
+/**
+ * Exclui todas as mídias de um atleta
+ */
+export async function deleteMidiasDoAtleta(atletaId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(midias)
+    .where(and(eq(midias.atletaId, atletaId), eq(midias.userId, userId)));
+}

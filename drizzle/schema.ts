@@ -145,6 +145,37 @@ export const atletasEmGrupos = mysqlTable("atletasEmGrupos", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+// Tabela de mídia (fotos, vídeos, documentos)
+export const midias = mysqlTable("midias", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  atletaId: int("atletaId").notNull(),
+  
+  // Tipo de mídia
+  tipo: mysqlEnum("tipo", ["foto", "video", "documento"]).notNull(),
+  
+  // Nome do arquivo
+  nome: varchar("nome", { length: 255 }).notNull(),
+  
+  // URL da mídia no S3
+  url: text("url").notNull(),
+  
+  // Caminho no S3
+  s3Key: varchar("s3Key", { length: 500 }).notNull(),
+  
+  // Tipo MIME
+  mimeType: varchar("mimeType", { length: 100 }),
+  
+  // Tamanho em bytes
+  tamanho: int("tamanho"),
+  
+  // Descrição/anotações
+  descricao: text("descricao"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 // Tipos TypeScript adicionais
 export type Atleta = typeof atletas.$inferSelect;
 export type InsertAtleta = typeof atletas.$inferInsert;
@@ -163,3 +194,6 @@ export type InsertGrupo = typeof grupos.$inferInsert;
 
 export type AtletaEmGrupo = typeof atletasEmGrupos.$inferSelect;
 export type InsertAtletaEmGrupo = typeof atletasEmGrupos.$inferInsert;
+
+export type Midia = typeof midias.$inferSelect;
+export type InsertMidia = typeof midias.$inferInsert;

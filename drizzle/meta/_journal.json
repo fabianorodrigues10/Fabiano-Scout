@@ -29,6 +29,13 @@
       "when": 1771433573462,
       "tag": "0003_lovely_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1771437816602,
+      "tag": "0004_friendly_baron_zemo",
+      "breakpoints": true
     }
   ]
 }

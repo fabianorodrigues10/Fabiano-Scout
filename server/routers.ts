@@ -344,6 +344,97 @@ export const appRouter = router({
         return { id };
       }),
   }),
+
+  // ==================== MÍDIA ====================
+  midias: router({
+    // Gerar URL de upload para S3
+    getUploadUrl: publicProcedure
+      .input(
+        z.object({
+          atletaId: z.number(),
+          fileName: z.string().min(1).max(255),
+          mimeType: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const s3Key = `atletas/${userId}/${input.atletaId}/${timestamp}-${random}-${input.fileName}`;
+        return { s3Key };
+      }),
+
+    // Listar mídias de um atleta
+    getByAtleta: publicProcedure
+      .input(z.object({ atletaId: z.number() }))
+      .query(({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        return db.getMidiasDoAtleta(input.atletaId, userId);
+      }),
+
+    // Buscar mídia por ID
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        return db.getMidiaById(input.id, userId);
+      }),
+
+    // Criar nova mídia (após upload para S3)
+    create: publicProcedure
+      .input(
+        z.object({
+          atletaId: z.number(),
+          tipo: z.enum(["foto", "video", "documento"]),
+          nome: z.string().min(1).max(255),
+          url: z.string().url(),
+          s3Key: z.string().min(1).max(500),
+          mimeType: z.string().optional(),
+          tamanho: z.number().optional(),
+          descricao: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const id = await db.createMidia({
+          userId,
+          atletaId: input.atletaId,
+          tipo: input.tipo,
+          nome: input.nome,
+          url: input.url,
+          s3Key: input.s3Key,
+          mimeType: input.mimeType,
+          tamanho: input.tamanho,
+          descricao: input.descricao,
+        });
+        return { id };
+      }),
+
+    // Atualizar mídia
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          descricao: z.string().optional(),
+          nome: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const { id, ...data } = input;
+        await db.updateMidia(id, userId, data);
+        return { success: true };
+      }),
+
+    // Deletar mídia
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        await db.deleteMidia(input.id, userId);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
