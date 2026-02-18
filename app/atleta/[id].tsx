@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,7 +9,6 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import { useState, useEffect, useCallback } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -28,7 +28,7 @@ const POSICOES = [
   "2º Atacante",
 ];
 
-const PES = ["Destro", "Canhoto", "Ambidestro"];
+const PES = ["direito", "esquerdo", "ambidestro"];
 
 export default function AtletaFormScreen() {
   const router = useRouter();
@@ -99,38 +99,34 @@ export default function AtletaFormScreen() {
         if (parts.length === 3) {
           const day = parseInt(parts[0]);
           const month = parseInt(parts[1]);
-          const year = parseInt(parts[2]);
-          
-          // Assumir século 1900 se ano >= 50, senão 2000
-          const fullYear = year >= 50 ? 1900 + year : 2000 + year;
-          
-          const birthDate = new Date(fullYear, month - 1, day);
-          const today = new Date();
-          let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-          
-          if (
-            today.getMonth() < birthDate.getMonth() ||
-            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())
-          ) {
-            calculatedAge--;
-          }
-          
-          if (calculatedAge > 0 && calculatedAge < 100) {
-            setIdade(String(calculatedAge));
+          let year = parseInt(parts[2]);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            year = year > 50 ? 1900 + year : 2000 + year;
+            const nascimento = new Date(year, month - 1, day);
+            const hoje = new Date();
+            let idadeCalculada = hoje.getFullYear() - nascimento.getFullYear();
+            const mes = hoje.getMonth() - nascimento.getMonth();
+            if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+              idadeCalculada--;
+            }
+            if (idadeCalculada >= 0 && idadeCalculada <= 60) {
+              setIdade(idadeCalculada.toString());
+            }
           }
         }
       } catch (e) {
-        console.log("Erro ao calcular idade", e);
+        // Data inválida
       }
     }
   }, [dataNascimento]);
 
+  // Aplica dados extraídos do Ogol ao formulário
   const applyOgolData = useCallback((data: OgolPlayerData) => {
     setOgolLoading(false);
     setOgolScrapeUrl(null);
     
     let preenchidos = 0;
-    
+
     if (data.nome && !nome.trim()) {
       setNome(data.nome);
       preenchidos++;
@@ -143,12 +139,12 @@ export default function AtletaFormScreen() {
       setDataNascimento(data.dataNascimento);
       preenchidos++;
     }
-    if (data.idade && !idade.trim()) {
-      setIdade(String(data.idade));
+    if (data.idade != null && !idade.trim()) {
+      setIdade(data.idade.toString());
       preenchidos++;
     }
-    if (data.altura && !altura.trim()) {
-      setAltura(String(data.altura));
+    if (data.altura != null && !altura.trim()) {
+      setAltura(data.altura.toString());
       preenchidos++;
     }
     if (data.pe && !pe.trim()) {
@@ -179,7 +175,7 @@ export default function AtletaFormScreen() {
     Alert.alert("Erro ao importar", error);
   }, []);
 
-  // Preencher dados do Ogol - usa WebView no nativo, proxy na web
+  // Preencher dados do Ogol - usa WebView no nativo, fetch na web
   const handlePreencherOgol = async () => {
     if (!link.trim()) {
       Alert.alert("Atenção", "Cole o link do Ogol no campo Link antes de preencher.");
@@ -193,87 +189,122 @@ export default function AtletaFormScreen() {
     setOgolLoading(true);
 
     if (Platform.OS === "web") {
-      // Na web, usar endpoint proxy que contorna Cloudflare
+      // Na web, tenta fetch direto (pode funcionar dependendo do CORS)
       try {
-        const { fetchOgolData } = await import("@/lib/ogol");
-        const data = await fetchOgolData(link.trim());
-        if (data && (data.nome || data.posicao || data.dataNascimento)) {
-          applyOgolData(data);
-          return;
-        } else {
-          throw new Error("Nenhum dado encontrado no Ogol");
+        const response = await fetch(link.trim(), {
+          headers: {
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+        });
+        if (response.ok) {
+          const html = await response.text();
+          // Importa o parser do lib/ogol.ts
+          const { parseOgolHtml } = await import("@/lib/ogol");
+          const data = parseOgolHtml(html);
+          if (data.nome || data.posicao || data.dataNascimento) {
+            applyOgolData(data);
+            return;
+          }
         }
-      } catch (e: any) {
-        console.log("[Ogol] Proxy fetch failed", e);
-        handleOgolError(e.message || "Erro ao buscar dados do Ogol");
+      } catch (e) {
+        console.log("[Ogol] Web fetch failed", e);
       }
+
+      // Fallback: tenta via servidor
+      try {
+        const serverUrl = `${(globalThis as any).__API_BASE_URL || "http://127.0.0.1:3000"}/api/ogol/scrape`;
+        const response = await fetch(serverUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: link.trim() }),
+        });
+        if (response.ok) {
+          const jsonResult = await response.json();
+          if (jsonResult.success && jsonResult.data) {
+            applyOgolData(jsonResult.data);
+            return;
+          }
+        }
+      } catch (e) {
+        console.log("[Ogol] Server fetch also failed", e);
+      }
+
+      setOgolLoading(false);
+      Alert.alert(
+        "Não disponível na web",
+        "A importação automática do Ogol funciona melhor no celular (via Expo Go). Na web, o site do Ogol bloqueia a conexão.\n\nPreencha os dados manualmente ou teste no celular."
+      );
     } else {
-      // No celular, usar WebView
+      // No celular, usa WebView oculta
       setOgolScrapeUrl(link.trim());
     }
   };
-
-  const handleSave = async () => {
+  
+  const handleSalvar = async () => {
     if (!nome.trim()) {
-      Alert.alert("Erro", "Nome é obrigatório");
+      Alert.alert("Erro", "O nome do atleta é obrigatório");
       return;
     }
-
+    
     try {
-      const altura_num = altura ? parseFloat(altura) : null;
+      let dataNascimentoISO: string | undefined = undefined;
+      if (dataNascimento && dataNascimento.length === 8) {
+        const parts = dataNascimento.split("/");
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]);
+          let year = parseInt(parts[2]);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            year = year > 50 ? 1900 + year : 2000 + year;
+            dataNascimentoISO = new Date(year, month - 1, day).toISOString();
+          }
+        }
+      }
 
+      const data = {
+        nome: nome.trim(),
+        posicao: posicao || undefined,
+        segundaPosicao: segundaPosicao || undefined,
+        clube: clube || undefined,
+        dataNascimento: dataNascimentoISO,
+        idade: idade ? Number(idade) : undefined,
+        altura: altura ? Number(altura) : undefined,
+        pe: pe as any || undefined,
+        link: link || undefined,
+        escala: escala || undefined,
+        valencia: valencia || undefined,
+      };
+      
       if (isEdit) {
         await updateMutation.mutateAsync({
           id: Number(id),
-          nome,
-          posicao: posicao || undefined,
-          segundaPosicao: segundaPosicao || undefined,
-          clube: clube || undefined,
-          dataNascimento: dataNascimento ? convertDDMMYYToISO(dataNascimento) : undefined,
-          idade: idade ? parseInt(idade) : undefined,
-          altura: altura_num || undefined,
-          pe: pe ? (pe.toLowerCase() as "direito" | "esquerdo" | "ambidestro") : undefined,
-          link: link || undefined,
-          escala: escala || undefined,
-          valencia: valencia || undefined,
+          ...data,
         });
-        Alert.alert("Sucesso", "Atleta atualizado com sucesso!");
+        Alert.alert("Sucesso", "Atleta atualizado com sucesso");
       } else {
-        await createMutation.mutateAsync({
-          nome,
-          posicao: posicao || undefined,
-          segundaPosicao: segundaPosicao || undefined,
-          clube: clube || undefined,
-          dataNascimento: dataNascimento ? convertDDMMYYToISO(dataNascimento) : undefined,
-          idade: idade ? parseInt(idade) : undefined,
-          altura: altura_num || undefined,
-          pe: pe ? (pe.toLowerCase() as "direito" | "esquerdo" | "ambidestro") : undefined,
-          link: link || undefined,
-          escala: escala || undefined,
-          valencia: valencia || undefined,
-        });
-        Alert.alert("Sucesso", "Atleta criado com sucesso!");
+        await createMutation.mutateAsync(data);
+        Alert.alert("Sucesso", "Atleta cadastrado com sucesso");
       }
+      
       router.back();
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Erro ao salvar atleta");
     }
   };
-
-  const handleDelete = async () => {
-    if (!isEdit) return;
-    
+  
+  const handleExcluir = () => {
     Alert.alert(
-      "Confirmar exclusão",
+      "Confirmar Exclusão",
       "Tem certeza que deseja excluir este atleta?",
       [
-        { text: "Cancelar", onPress: () => {} },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Excluir",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteMutation.mutateAsync({ id: Number(id) });
-              Alert.alert("Sucesso", "Atleta excluído com sucesso!");
+              Alert.alert("Sucesso", "Atleta excluído com sucesso");
               router.back();
             } catch (error: any) {
               Alert.alert("Erro", error.message || "Erro ao excluir atleta");
@@ -284,245 +315,346 @@ export default function AtletaFormScreen() {
     );
   };
 
+  // Máscara para data dd/mm/aa
+  const handleDataChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9]/g, "");
+    let formatted = "";
+    if (cleaned.length <= 2) {
+      formatted = cleaned;
+    } else if (cleaned.length <= 4) {
+      formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2);
+    } else {
+      formatted = cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) + "/" + cleaned.slice(4, 6);
+    }
+    setDataNascimento(formatted);
+  };
+  
   if (loadingAtleta) {
     return (
-      <ScreenContainer className="items-center justify-center">
+      <ScreenContainer className="justify-center items-center">
         <ActivityIndicator size="large" color={colors.primary} />
       </ScreenContainer>
     );
   }
-
+  
+  const isLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+  const showOgolButton = link.includes("ogol.com");
+  
   return (
-    <>
-      {ogolScrapeUrl && (
+    <ScreenContainer>
+      <View className="flex-1">
+        {/* WebView oculta para scraping do Ogol */}
         <OgolWebScraper
           url={ogolScrapeUrl}
           onResult={applyOgolData}
           onError={handleOgolError}
-          onLoadStart={() => {}}
+          onLoadStart={() => setOgolLoading(true)}
         />
-      )}
 
-      <ScreenContainer className="pb-4">
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          <Text className="text-2xl font-bold text-foreground mb-6">
-            {isEdit ? "Editar Atleta" : "Novo Atleta"}
-          </Text>
+        {/* Header */}
+        <View className="px-4 pt-4 pb-3 bg-background border-b border-border flex-row justify-between items-center">
+          <View className="flex-row items-center flex-1">
+            <TouchableOpacity onPress={() => router.back()} className="mr-3">
+              <IconSymbol name="chevron.right" size={24} color={colors.foreground} style={{ transform: [{ rotate: "180deg" }] }} />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-foreground">
+              {isEdit ? "Editar Atleta" : "Novo Atleta"}
+            </Text>
+          </View>
+          
+          {isEdit && (
+            <TouchableOpacity onPress={handleExcluir} disabled={isLoading}>
+              <IconSymbol name="trash" size={22} color={colors.error} />
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        {/* Formulário */}
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
 
-          {/* Nome */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Nome *</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Nome completo"
-            value={nome}
-            onChangeText={setNome}
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Link do Ogol */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Link Ogol</Text>
-          <View className="flex-row gap-2 mb-4">
+          {/* Link do Ogol - Movido para o topo para facilitar o fluxo */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Link do Ogol
+            </Text>
             <TextInput
-              className="flex-1 border border-border rounded-lg px-4 py-3 text-foreground"
-              placeholder="https://www.ogol.com.br/jogador/..."
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Cole o link do ogol.com.br do atleta"
+              placeholderTextColor={colors.muted}
               value={link}
               onChangeText={setLink}
-              placeholderTextColor={colors.muted}
+              keyboardType="url"
+              autoCapitalize="none"
+              style={{ color: colors.foreground }}
             />
-            <TouchableOpacity
-              onPress={handlePreencherOgol}
-              disabled={ogolLoading || !link.trim()}
-              className={`px-4 py-3 rounded-lg ${
-                ogolLoading || !link.trim()
-                  ? "bg-muted"
-                  : "bg-primary"
-              }`}
-            >
-              {ogolLoading ? (
-                <ActivityIndicator size="small" color={colors.background} />
-              ) : (
-                <IconSymbol name="paperplane.fill" size={20} color={colors.background} />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Posição */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Posição</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-            <View className="flex-row gap-2">
-              {POSICOES.map((pos) => (
-                <TouchableOpacity
-                  key={pos}
-                  onPress={() => setPosicao(posicao === pos ? "" : pos)}
-                  className={`px-4 py-2 rounded-full ${
-                    posicao === pos
-                      ? "bg-primary"
-                      : "bg-surface border border-border"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      posicao === pos ? "text-background" : "text-foreground"
-                    }`}
-                  >
-                    {pos}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-
-          {/* Data de Nascimento */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Data de Nascimento (dd/mm/aa)</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="DD/MM/AA"
-            value={dataNascimento}
-            onChangeText={setDataNascimento}
-            maxLength={8}
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Idade */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Idade</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Calculada automaticamente"
-            value={idade}
-            onChangeText={setIdade}
-            keyboardType="numeric"
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Altura */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Altura (m)</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Ex: 1.76"
-            value={altura}
-            onChangeText={setAltura}
-            keyboardType="decimal-pad"
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Pé */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Pé Preferencial</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-            <View className="flex-row gap-2">
-              {PES.map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  onPress={() => setPe(pe === p ? "" : p)}
-                  className={`px-4 py-2 rounded-full ${
-                    pe === p
-                      ? "bg-primary"
-                      : "bg-surface border border-border"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      pe === p ? "text-background" : "text-foreground"
-                    }`}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-
-          {/* Clube */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Clube</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Nome do clube"
-            value={clube}
-            onChangeText={setClube}
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Segunda Posição */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Segunda Posição</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Posição alternativa"
-            value={segundaPosicao}
-            onChangeText={setSegundaPosicao}
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Escala */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Escala</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4"
-            placeholder="Ex: 8.5"
-            value={escala}
-            onChangeText={setEscala}
-            keyboardType="decimal-pad"
-            placeholderTextColor={colors.muted}
-          />
-
-          {/* Valências */}
-          <Text className="text-sm font-semibold text-foreground mb-2">Valências</Text>
-          <TextInput
-            className="border border-border rounded-lg px-4 py-3 text-foreground mb-4 h-24"
-            placeholder="Descrição das características do atleta (até 500 caracteres)"
-            value={valencia}
-            onChangeText={(text) => setValencia(text.slice(0, 500))}
-            multiline
-            numberOfLines={4}
-            placeholderTextColor={colors.muted}
-            textAlignVertical="top"
-          />
-          <Text className="text-xs text-muted mb-4">{valencia.length}/500</Text>
-
-          {/* Botões */}
-          <View className="flex-row gap-3 mt-6">
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="flex-1 bg-primary rounded-lg py-3"
-            >
-              {createMutation.isPending || updateMutation.isPending ? (
-                <ActivityIndicator size="small" color={colors.background} />
-              ) : (
-                <Text className="text-center font-semibold text-background">
-                  {isEdit ? "Atualizar" : "Criar"}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {isEdit && (
+            
+            {/* Botão Preencher do Ogol - aparece quando link contém ogol.com */}
+            {showOgolButton && (
               <TouchableOpacity
-                onPress={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="flex-1 bg-error rounded-lg py-3"
+                onPress={handlePreencherOgol}
+                disabled={ogolLoading}
+                className="mt-2 rounded-lg py-3 flex-row items-center justify-center"
+                style={{
+                  backgroundColor: "#FF6B00",
+                  opacity: ogolLoading ? 0.6 : 1,
+                }}
               >
-                {deleteMutation.isPending ? (
-                  <ActivityIndicator size="small" color={colors.background} />
+                {ogolLoading ? (
+                  <>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text className="text-white font-semibold ml-2">
+                      Buscando dados...
+                    </Text>
+                  </>
                 ) : (
-                  <Text className="text-center font-semibold text-background">Excluir</Text>
+                  <>
+                    <IconSymbol name="bolt.fill" size={18} color="#FFFFFF" />
+                    <Text className="text-white font-semibold ml-2">
+                      Preencher do Ogol
+                    </Text>
+                  </>
                 )}
               </TouchableOpacity>
             )}
-          </View>
-        </ScrollView>
-      </ScreenContainer>
-    </>
-  );
-}
 
-function convertDDMMYYToISO(ddmmyy: string): string {
-  const parts = ddmmyy.split("/");
-  if (parts.length !== 3) return "";
-  
-  const day = parts[0];
-  const month = parts[1];
-  let year = parts[2];
-  
-  // Converter YY para YYYY
-  const yy = parseInt(year);
-  const fullYear = yy >= 50 ? 1900 + yy : 2000 + yy;
-  
-  return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+            {showOgolButton && Platform.OS !== "web" && (
+              <Text className="text-xs text-muted mt-1 text-center">
+                Abre a página do Ogol em segundo plano e extrai os dados automaticamente
+              </Text>
+            )}
+          </View>
+
+          {/* Separador visual */}
+          {showOgolButton && (
+            <View className="mb-4 flex-row items-center">
+              <View className="flex-1 h-px bg-border" />
+              <Text className="mx-3 text-xs text-muted">Dados do Atleta</Text>
+              <View className="flex-1 h-px bg-border" />
+            </View>
+          )}
+
+          {/* Nome */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Nome do Atleta *
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Ex: Neymar Jr"
+              placeholderTextColor={colors.muted}
+              value={nome}
+              onChangeText={setNome}
+              style={{ color: colors.foreground }}
+            />
+          </View>
+          
+          {/* Posição */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Posição Principal
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row gap-2">
+                {POSICOES.map((pos) => (
+                  <TouchableOpacity
+                    key={pos}
+                    onPress={() => setPosicao(posicao === pos ? "" : pos)}
+                    style={{
+                      backgroundColor: posicao === pos ? colors.primary : colors.surface,
+                      borderWidth: posicao === pos ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: posicao === pos ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {pos}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Segunda Posição */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Segunda Posição (opcional)
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Ex: Meia"
+              placeholderTextColor={colors.muted}
+              value={segundaPosicao}
+              onChangeText={setSegundaPosicao}
+              style={{ color: colors.foreground }}
+            />
+          </View>
+          
+          {/* Clube */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Clube Atual
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Ex: Flamengo/RJ"
+              placeholderTextColor={colors.muted}
+              value={clube}
+              onChangeText={setClube}
+              style={{ color: colors.foreground }}
+            />
+          </View>
+          
+          {/* Data de Nascimento e Idade */}
+          <View className="flex-row gap-3 mb-4">
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Data Nasc. (dd/mm/aa)
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="01/03/97"
+                placeholderTextColor={colors.muted}
+                value={dataNascimento}
+                onChangeText={handleDataChange}
+                keyboardType="numeric"
+                maxLength={8}
+                style={{ color: colors.foreground }}
+              />
+            </View>
+            <View className="w-24">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Idade
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Auto"
+                placeholderTextColor={colors.muted}
+                value={idade}
+                onChangeText={setIdade}
+                keyboardType="numeric"
+                style={{ color: colors.foreground, backgroundColor: idade ? colors.surface : colors.surface }}
+              />
+            </View>
+          </View>
+          
+          {/* Altura e Pé */}
+          <View className="flex-row gap-3 mb-4">
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Altura
+              </Text>
+              <TextInput
+                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Ex: 1.76"
+                placeholderTextColor={colors.muted}
+                value={altura}
+                onChangeText={setAltura}
+                style={{ color: colors.foreground }}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground mb-2">
+                Pé Preferencial
+              </Text>
+              <View className="flex-row gap-2">
+                {PES.map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setPe(pe === p ? "" : p)}
+                    style={{
+                      backgroundColor: pe === p ? colors.primary : colors.surface,
+                      borderWidth: pe === p ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      flex: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: pe === p ? "white" : colors.foreground,
+                        fontSize: 11,
+                        fontWeight: "600",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {p === "direito" ? "Dir" : p === "esquerdo" ? "Esq" : "Amb"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+          
+          {/* Escala */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Escala
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Ex: A, B, C..."
+              placeholderTextColor={colors.muted}
+              value={escala}
+              onChangeText={setEscala}
+              style={{ color: colors.foreground }}
+            />
+          </View>
+
+          {/* Valências */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Valências
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Descreva as características e valências do atleta (até 500 caracteres)..."
+              placeholderTextColor={colors.muted}
+              value={valencia}
+              onChangeText={(text) => setValencia(text.slice(0, 500))}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              style={{ color: colors.foreground, minHeight: 100 }}
+            />
+            <Text className="text-xs text-muted text-right mt-1">
+              {valencia.length}/500
+            </Text>
+          </View>
+          
+          {/* Botão Salvar */}
+          <TouchableOpacity
+            onPress={handleSalvar}
+            disabled={isLoading}
+            className="rounded-xl py-4 items-center mb-4"
+            style={{
+              backgroundColor: isLoading ? colors.muted : colors.primary,
+            }}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-base">
+                {isEdit ? "Salvar Alterações" : "Cadastrar Atleta"}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Espaço extra no final */}
+          <View className="h-8" />
+        </ScrollView>
+      </View>
+    </ScreenContainer>
+  );
 }
