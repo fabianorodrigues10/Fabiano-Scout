@@ -220,7 +220,7 @@ export async function fetchOgolData(
     console.log("[Ogol] Client fetch failed, trying server...", e);
   }
 
-  // Fallback: tentar via servidor
+  // Fallback: tentar via servidor (proxy Ogol)
   if (apiBaseUrl) {
     try {
       const serverUrl = `${apiBaseUrl}/api/ogol/scrape`;
@@ -232,8 +232,19 @@ export async function fetchOgolData(
 
       if (response.ok) {
         const jsonResult = await response.json();
-        if (jsonResult.success && jsonResult.data) {
-          return { success: true, data: jsonResult.data };
+        // Endpoint retorna diretamente os dados
+        if (jsonResult.nome || jsonResult.posicao || jsonResult.dataNascimento) {
+          // Converter altura de string para number se necessário
+          const data: OgolPlayerData = {
+            nome: jsonResult.nome || null,
+            posicao: jsonResult.posicao ? mapPosicao(jsonResult.posicao) : null,
+            dataNascimento: jsonResult.dataNascimento || null,
+            idade: jsonResult.idade || null,
+            altura: jsonResult.altura ? parseFloat(String(jsonResult.altura)) / 100 : null,
+            pe: jsonResult.pe ? mapPe(jsonResult.pe) : null,
+            clube: jsonResult.clube || null,
+          };
+          return { success: true, data };
         }
       }
     } catch (e) {

@@ -15,25 +15,6 @@ export interface OgolPlayerData {
 }
 
 /**
- * Extrai texto entre dois marcadores no HTML/texto
- */
-function extractBetween(text: string, before: string, after: string): string | null {
-  const startIdx = text.indexOf(before);
-  if (startIdx === -1) return null;
-  const contentStart = startIdx + before.length;
-  const endIdx = text.indexOf(after, contentStart);
-  if (endIdx === -1) return null;
-  return text.substring(contentStart, endIdx).trim();
-}
-
-/**
- * Remove tags HTML de um texto
- */
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
-}
-
-/**
  * Mapeia posição do Ogol para as categorias do app
  */
 function mapPosicao(ogolPos: string | null): string | null {
@@ -53,12 +34,12 @@ function mapPosicao(ogolPos: string | null): string | null {
     volante: "Volante",
     "médio defensivo": "Volante",
     "meio-campista": "Meia",
-    "médio": "Meia",
+    médio: "Meia",
     meia: "Meia",
     "meia-atacante": "Meia",
     "médio ofensivo": "Meia",
     extremo: "Extremo",
-    "ponta": "Extremo",
+    ponta: "Extremo",
     "ponta direita": "Extremo",
     "ponta esquerda": "Extremo",
     atacante: "Centroavante",
@@ -67,15 +48,10 @@ function mapPosicao(ogolPos: string | null): string | null {
     "segundo avançado": "2º Atacante",
   };
 
-  // Tentar match exato
   if (mapping[pos]) return mapping[pos];
-
-  // Tentar match parcial
   for (const [key, value] of Object.entries(mapping)) {
     if (pos.includes(key) || key.includes(pos)) return value;
   }
-
-  // Retornar o original capitalizado se não encontrar mapeamento
   return ogolPos.charAt(0).toUpperCase() + ogolPos.slice(1);
 }
 
@@ -92,7 +68,38 @@ function mapPe(ogolPe: string | null): string | null {
 }
 
 /**
- * Parseia os dados pessoais do HTML da página do Ogol
+ * Extrai o valor de um campo do HTML do Ogol.
+ */
+function extractField(html: string, label: string): string | null {
+  // Find the label position first
+  const labelRegex = new RegExp(label, "i");
+  const labelMatch = html.match(labelRegex);
+  if (!labelMatch || labelMatch.index === undefined) return null;
+
+  // Get everything after the label
+  const afterLabel = html.substring(
+    labelMatch.index + labelMatch[0].length
+  );
+
+  // Pattern 1: card-data__value content (most common in real Ogol HTML)
+  const valueMatch = afterLabel.match(
+    /card-data__value[s]?"[^>]*>(?:\s*(?:<[^>]+>\s*)*)?([^<]+)/i
+  );
+  if (valueMatch?.[1]?.trim()) return valueMatch[1].trim();
+
+  // Pattern 2: direct text after closing tag
+  const directMatch = afterLabel.match(/<\/span>\s*<[^>]+>\s*([^<]+)/i);
+  if (directMatch?.[1]?.trim()) return directMatch[1].trim();
+
+  // Pattern 3: plain text on same line
+  const plainMatch = afterLabel.match(/^\s+([^\n<]+)/);
+  if (plainMatch?.[1]?.trim()) return plainMatch[1].trim();
+
+  return null;
+}
+
+/**
+ * Parseia HTML do Ogol e extrai dados do jogador
  */
 function parseOgolHtml(html: string): OgolPlayerData {
   const result: OgolPlayerData = {
@@ -105,78 +112,50 @@ function parseOgolHtml(html: string): OgolPlayerData {
     clube: null,
   };
 
-  // Nome completo - procurar na seção de dados pessoais
-  // Padrão: "Nome" seguido do nome completo
-  const nomePatterns = [
-    /Nome\s*<\/[^>]+>\s*<[^>]+>\s*([^<]+)/i,
-    /Nome\s*([A-ZÀ-Ú][^<\n]{3,})/i,
-    /nome completo[^>]*>?\s*(?:é\s+)?([A-ZÀ-Ú][^.<\n]{3,})/i,
-  ];
-  for (const pattern of nomePatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      result.nome = match[1].trim();
-      break;
-    }
+  // Nome completo
+  const nomeRaw = extractField(html, "Nome");
+  if (nomeRaw && nomeRaw.length > 2) {
+    result.nome = nomeRaw;
   }
 
-  // Data de nascimento - formato: "1997-03-28 (28 anos)"
-  const dataMatch = html.match(/Data de Nascimento[^>]*>?\s*(\d{4}-\d{2}-\d{2})\s*\((\d+)\s*anos?\)/i);
-  if (dataMatch) {
-    result.dataNascimento = dataMatch[1];
-    result.idade = parseInt(dataMatch[2], 10);
+  // Data de nascimento e idade
+  const dataRaw = extractField(html, "Data de Nascimento");
+  if (dataRaw) {
+    const dataMatch = dataRaw.match(
+      /(\d{4}-\d{2}-\d{2})\s*\((\d+)\s*anos?\)/
+    );
+    if (dataMatch) {
+      result.dataNascimento = dataMatch[1];
+      result.idade = parseInt(dataMatch[2], 10);
+    }
   }
 
   // Posição
-  const posPatterns = [
-    /Posi[çc][ãa]o\s*<\/[^>]+>\s*<[^>]+>\s*([^<]+)/i,
-    /Posi[çc][ãa]o\s*([A-ZÀ-Ú][a-zà-ú\s-]+)/i,
-  ];
-  for (const pattern of posPatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      const rawPos = match[1].trim();
-      if (rawPos.length < 30) { // sanity check
-        result.posicao = mapPosicao(rawPos);
-      }
-      break;
-    }
+  const posRaw = extractField(html, "Posi(?:ção|çao|cao|ção)");
+  if (posRaw && posRaw.length < 30) {
+    result.posicao = mapPosicao(posRaw);
   }
 
   // Pé preferencial
-  const pePatterns = [
-    /P[ée] preferencial\s*<\/[^>]+>\s*<[^>]+>\s*([^<]+)/i,
-    /P[ée] preferencial\s*([A-ZÀ-Ú][a-zà-ú]+)/i,
-  ];
-  for (const pattern of pePatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      result.pe = mapPe(match[1].trim());
-      break;
-    }
+  const peRaw = extractField(html, "P(?:é|e) preferencial");
+  if (peRaw) {
+    result.pe = mapPe(peRaw);
   }
 
-  // Altura - formato: "176 cm" ou "176 cm / 74 kg"
-  const alturaMatch = html.match(/Altura\s*(?:\/\s*Peso)?\s*(?:<\/[^>]+>\s*<[^>]+>\s*)?(\d{3})\s*cm/i);
-  if (alturaMatch) {
-    const cm = parseInt(alturaMatch[1], 10);
-    result.altura = parseFloat((cm / 100).toFixed(2));
+  // Altura
+  const alturaRaw = extractField(html, "Altura");
+  if (alturaRaw) {
+    const altMatch = alturaRaw.match(/(\d{3})\s*cm/);
+    if (altMatch) {
+      const cm = parseInt(altMatch[1], 10);
+      result.altura = parseFloat((cm / 100).toFixed(2));
+    }
   }
 
   // Clube atual
-  const clubePatterns = [
-    /Clube atual\s*<\/[^>]+>\s*(?:<[^>]+>\s*)*([^<]+)/i,
-    /Clube atual\s*([A-ZÀ-Ú][^<\n]{1,50})/i,
-  ];
-  for (const pattern of clubePatterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      const clube = match[1].trim();
-      if (clube !== "Sem Clube" && clube.length > 1) {
-        result.clube = clube;
-      }
-      break;
-    }
+  const clubeRaw = extractField(html, "Clube atual");
+  if (clubeRaw && clubeRaw !== "Sem Clube" && clubeRaw.length > 1) {
+    result.clube = clubeRaw;
   }
 
   return result;
@@ -203,7 +182,7 @@ export function registerOgolRoutes(app: any) {
 
       console.log(`[Ogol Scraper] Fetching: ${url}`);
 
-      // Fetch da página
+      // Fetch da página com headers que contornam Cloudflare
       const response = await fetch(url, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -217,7 +196,11 @@ export function registerOgolRoutes(app: any) {
         return;
       }
 
-      const html = await response.text();
+      // Decodificar HTML com tratamento de encoding
+      const buffer = await response.arrayBuffer();
+      const decoder = new TextDecoder("iso-8859-1");
+      const html = decoder.decode(buffer);
+
       console.log(`[Ogol Scraper] HTML length: ${html.length}`);
 
       // Parsear os dados
