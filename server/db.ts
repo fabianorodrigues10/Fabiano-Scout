@@ -6,9 +6,15 @@ import {
   atletas,
   configuracaoCampos,
   configuracaoCamposPadrao,
+  avaliacoes,
+  grupos,
+  atletasEmGrupos,
   InsertAtleta,
   InsertConfiguracaoCampo,
   InsertConfiguracaoCampoPadrao,
+  InsertAvaliacao,
+  InsertGrupo,
+  InsertAtletaEmGrupo,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -346,4 +352,210 @@ export async function upsertCampoPadrao(data: InsertConfiguracaoCampoPadrao) {
     const result = await db.insert(configuracaoCamposPadrao).values(data);
     return Number(result[0].insertId);
   }
+}
+
+// ==================== AVALIAÇÕES ====================
+
+/**
+ * Busca avaliação de um atleta
+ */
+export async function getAvaliacao(atletaId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(avaliacoes)
+    .where(and(eq(avaliacoes.atletaId, atletaId), eq(avaliacoes.userId, userId)))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Cria ou atualiza avaliação de um atleta
+ */
+export async function upsertAvaliacao(data: InsertAvaliacao) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verifica se já existe
+  const existing = await db
+    .select()
+    .from(avaliacoes)
+    .where(
+      and(
+        eq(avaliacoes.atletaId, data.atletaId),
+        eq(avaliacoes.userId, data.userId)
+      )
+    )
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // Atualiza
+    await db
+      .update(avaliacoes)
+      .set(data)
+      .where(eq(avaliacoes.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    // Cria
+    const result = await db.insert(avaliacoes).values(data);
+    return Number(result[0].insertId);
+  }
+}
+
+/**
+ * Exclui avaliação de um atleta
+ */
+export async function deleteAvaliacao(atletaId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(avaliacoes)
+    .where(and(eq(avaliacoes.atletaId, atletaId), eq(avaliacoes.userId, userId)));
+}
+
+// ==================== GRUPOS ====================
+
+/**
+ * Busca todos os grupos de um usuário
+ */
+export async function getGrupos(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select()
+    .from(grupos)
+    .where(eq(grupos.userId, userId))
+    .orderBy(desc(grupos.createdAt));
+}
+
+/**
+ * Busca grupo por ID
+ */
+export async function getGrupoById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(grupos)
+    .where(and(eq(grupos.id, id), eq(grupos.userId, userId)))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Cria um novo grupo
+ */
+export async function createGrupo(data: InsertGrupo) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(grupos).values(data);
+  return Number(result[0].insertId);
+}
+
+/**
+ * Atualiza um grupo
+ */
+export async function updateGrupo(
+  id: number,
+  userId: number,
+  data: Partial<InsertGrupo>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .update(grupos)
+    .set(data)
+    .where(and(eq(grupos.id, id), eq(grupos.userId, userId)));
+}
+
+/**
+ * Exclui um grupo
+ */
+export async function deleteGrupo(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(grupos)
+    .where(and(eq(grupos.id, id), eq(grupos.userId, userId)));
+}
+
+// ==================== ATLETAS EM GRUPOS ====================
+
+/**
+ * Busca atletas de um grupo
+ */
+export async function getAtletasDoGrupo(grupoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db
+    .select({ atletaId: atletasEmGrupos.atletaId })
+    .from(atletasEmGrupos)
+    .where(eq(atletasEmGrupos.grupoId, grupoId));
+}
+
+/**
+ * Adiciona atleta a um grupo
+ */
+export async function addAtletaAoGrupo(data: InsertAtletaEmGrupo) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verifica se já existe
+  const existing = await db
+    .select()
+    .from(atletasEmGrupos)
+    .where(
+      and(
+        eq(atletasEmGrupos.atletaId, data.atletaId),
+        eq(atletasEmGrupos.grupoId, data.grupoId)
+      )
+    )
+    .limit(1);
+  
+  if (existing.length === 0) {
+    const result = await db.insert(atletasEmGrupos).values(data);
+    return Number(result[0].insertId);
+  }
+  
+  return existing[0].id;
+}
+
+/**
+ * Remove atleta de um grupo
+ */
+export async function removeAtletaDoGrupo(atletaId: number, grupoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(atletasEmGrupos)
+    .where(
+      and(
+        eq(atletasEmGrupos.atletaId, atletaId),
+        eq(atletasEmGrupos.grupoId, grupoId)
+      )
+    );
+}
+
+/**
+ * Remove todos os atletas de um grupo (quando grupo é deletado)
+ */
+export async function removeAllAtletasDoGrupo(grupoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db
+    .delete(atletasEmGrupos)
+    .where(eq(atletasEmGrupos.grupoId, grupoId));
 }

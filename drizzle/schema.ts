@@ -102,6 +102,49 @@ export const configuracaoCamposPadrao = mysqlTable("configuracaoCamposPadrao", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+// Tabela de avaliações de atletas
+export const avaliacoes = mysqlTable("avaliacoes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  atletaId: int("atletaId").notNull(),
+  
+  // Nota de 1-10
+  nota: int("nota").notNull(), // 1-10
+  
+  // Comentários técnicos
+  comentarios: text("comentarios"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// Tabela de grupos/seleções de atletas
+export const grupos = mysqlTable("grupos", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Nome do grupo (ex: Titulares, Reservas, Monitorados)
+  nome: varchar("nome", { length: 255 }).notNull(),
+  
+  // Descrição do grupo
+  descricao: text("descricao"),
+  
+  // Cor para identificação visual
+  cor: varchar("cor", { length: 7 }).default("#FF6B35"), // Hex color
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// Tabela de relação muitos-para-muitos: atletas em grupos
+export const atletasEmGrupos = mysqlTable("atletasEmGrupos", {
+  id: int("id").autoincrement().primaryKey(),
+  atletaId: int("atletaId").notNull(),
+  grupoId: int("grupoId").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 // Tipos TypeScript adicionais
 export type Atleta = typeof atletas.$inferSelect;
 export type InsertAtleta = typeof atletas.$inferInsert;
@@ -111,3 +154,12 @@ export type InsertConfiguracaoCampo = typeof configuracaoCampos.$inferInsert;
 
 export type ConfiguracaoCampoPadrao = typeof configuracaoCamposPadrao.$inferSelect;
 export type InsertConfiguracaoCampoPadrao = typeof configuracaoCamposPadrao.$inferInsert;
+
+export type Avaliacao = typeof avaliacoes.$inferSelect;
+export type InsertAvaliacao = typeof avaliacoes.$inferInsert;
+
+export type Grupo = typeof grupos.$inferSelect;
+export type InsertGrupo = typeof grupos.$inferInsert;
+
+export type AtletaEmGrupo = typeof atletasEmGrupos.$inferSelect;
+export type InsertAtletaEmGrupo = typeof atletasEmGrupos.$inferInsert;

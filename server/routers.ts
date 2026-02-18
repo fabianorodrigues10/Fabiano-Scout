@@ -134,6 +134,136 @@ export const appRouter = router({
       }),
   }),
 
+  // ==================== AVALIAÇÕES ====================
+  avaliacoes: router({
+    // Buscar avaliação de um atleta
+    get: publicProcedure
+      .input(z.object({ atletaId: z.number() }))
+      .query(({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        return db.getAvaliacao(input.atletaId, userId);
+      }),
+
+    // Criar ou atualizar avaliação
+    upsert: publicProcedure
+      .input(
+        z.object({
+          atletaId: z.number(),
+          nota: z.number().min(1).max(10),
+          comentarios: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const id = await db.upsertAvaliacao({
+          userId,
+          atletaId: input.atletaId,
+          nota: input.nota,
+          comentarios: input.comentarios || null,
+        });
+        return { id };
+      }),
+
+    // Deletar avaliação
+    delete: publicProcedure
+      .input(z.object({ atletaId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        await db.deleteAvaliacao(input.atletaId, userId);
+        return { success: true };
+      }),
+  }),
+
+  // ==================== GRUPOS ====================
+  grupos: router({
+    // Listar todos os grupos
+    list: publicProcedure.query(({ ctx }) => {
+      const userId = ctx.user?.id || 1;
+      return db.getGrupos(userId);
+    }),
+
+    // Buscar grupo por ID
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        return db.getGrupoById(input.id, userId);
+      }),
+
+    // Buscar atletas de um grupo
+    getAtletas: publicProcedure
+      .input(z.object({ grupoId: z.number() }))
+      .query(({ input }) => {
+        return db.getAtletasDoGrupo(input.grupoId);
+      }),
+
+    // Criar novo grupo
+    create: publicProcedure
+      .input(
+        z.object({
+          nome: z.string().min(1).max(255),
+          descricao: z.string().optional(),
+          cor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const id = await db.createGrupo({
+          userId,
+          nome: input.nome,
+          descricao: input.descricao || null,
+          cor: input.cor || "#FF6B35",
+        });
+        return { id };
+      }),
+
+    // Atualizar grupo
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          nome: z.string().min(1).max(255).optional(),
+          descricao: z.string().optional(),
+          cor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const { id, ...data } = input;
+        await db.updateGrupo(id, userId, data);
+        return { success: true };
+      }),
+
+    // Deletar grupo
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        await db.removeAllAtletasDoGrupo(input.id);
+        await db.deleteGrupo(input.id, userId);
+        return { success: true };
+      }),
+
+    // Adicionar atleta ao grupo
+    addAtleta: publicProcedure
+      .input(z.object({ atletaId: z.number(), grupoId: z.number() }))
+      .mutation(async ({ input }) => {
+        const id = await db.addAtletaAoGrupo({
+          atletaId: input.atletaId,
+          grupoId: input.grupoId,
+        });
+        return { id };
+      }),
+
+    // Remover atleta do grupo
+    removeAtleta: publicProcedure
+      .input(z.object({ atletaId: z.number(), grupoId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.removeAtletaDoGrupo(input.atletaId, input.grupoId);
+        return { success: true };
+      }),
+  }),
+
   // ==================== CONFIGURAÇÃO DE CAMPOS ====================
   campos: router({
     // Listar campos customizados
