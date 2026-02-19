@@ -470,11 +470,20 @@ export default function HomeScreen() {
               elevation: 3,
             }}
           >
-            <View className="w-14 h-14 rounded-full bg-primary/20 justify-center items-center mr-4">
-              <Text className="text-primary font-bold text-lg">
-                {item.nome?.charAt(0).toUpperCase() || "?"}
-              </Text>
-            </View>
+            {item.fotoUrl ? (
+              <Image
+                source={{ uri: item.fotoUrl }}
+                style={{ width: 56, height: 56, borderRadius: 28, marginRight: 16 }}
+                resizeMode="cover"
+                progressiveRenderingEnabled={true}
+              />
+            ) : (
+              <View className="w-14 h-14 rounded-full bg-primary/20 justify-center items-center mr-4">
+                <Text className="text-primary font-bold text-lg">
+                  {item.nome?.charAt(0).toUpperCase() || "?"}
+                </Text>
+              </View>
+            )}
 
             <View className="flex-1">
               <Text className="text-base font-semibold text-foreground" numberOfLines={1}>

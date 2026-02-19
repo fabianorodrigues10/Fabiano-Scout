@@ -31,9 +31,10 @@ export const appRouter = router({
     // Buscar atleta por ID
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
-      .query(({ ctx, input }) => {
+      .query(async ({ ctx, input }) => {
         const userId = ctx.user?.id || 1;
-        return db.getAtletaById(input.id, userId);
+        const atleta = await db.getAtletaById(input.id, userId);
+        return atleta;
       }),
 
     // Buscar atletas sem data de nascimento/idade
@@ -442,6 +443,46 @@ export const appRouter = router({
         const userId = ctx.user?.id || 1;
         await db.deleteMidia(input.id, userId);
         return { success: true };
+      }),
+  }),
+
+  // ==================== RELATORIOS ====================
+  relatorios: router({
+    // Gerar relatório em PDF
+    gerarPDF: publicProcedure
+      .input(
+        z.object({
+          titulo: z.string(),
+          posicoes: z.array(z.string()).optional(),
+          idades: z.array(z.number()).optional(),
+          clubes: z.array(z.string()).optional(),
+          atletaIds: z.array(z.number()).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const userId = ctx.user?.id || 1;
+          let atletasQuery = await db.getAtletas(userId);
+          
+          if (input.atletaIds && input.atletaIds.length > 0) {
+            atletasQuery = atletasQuery.filter((a: any) => input.atletaIds!.includes(a.id));
+          }
+          
+          const { gerarRelatorioPDF } = await import("./pdf-generator.js");
+          const pdfBuffer = await gerarRelatorioPDF(input.titulo, atletasQuery, { totalAtletas: atletasQuery.length, idadeMedia: 0, alturaMedia: "0", posicoes: {} });
+          
+          return {
+            success: true,
+            message: "Relatório gerado com sucesso",
+            pdfBase64: pdfBuffer.toString("base64"),
+          };
+        } catch (error) {
+          console.error("Erro ao gerar PDF:", error);
+          return {
+            success: false,
+            message: "Erro ao gerar relatório",
+          };
+        }
       }),
   }),
 });

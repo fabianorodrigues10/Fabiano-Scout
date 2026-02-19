@@ -132,11 +132,21 @@ export default function AtletaDetalhesScreen() {
             </View>
           </View>
 
-          {/* Avatar Placeholder */}
+          {/* Foto ou Avatar */}
           <View className="items-center mb-4">
-            <View className="w-24 h-24 rounded-full bg-primary/30 justify-center items-center mb-3 border-2 border-primary">
-              <IconSymbol name="person.fill" size={48} color={colors.primary} />
-            </View>
+            {atleta.fotoUrl ? (
+              <Image
+                source={{ uri: atleta.fotoUrl }}
+                style={{ width: 200, height: 200, borderRadius: 20, marginBottom: 16 }}
+                resizeMode="cover"
+                defaultSource={require("@/assets/images/fabiano-scout-logo.png")}
+                progressiveRenderingEnabled={true}
+              />
+            ) : (
+              <View className="w-24 h-24 rounded-full bg-primary/30 justify-center items-center mb-3 border-2 border-primary">
+                <IconSymbol name="person.fill" size={48} color={colors.primary} />
+              </View>
+            )}
             <Text className="text-2xl font-bold text-foreground text-center">
               {atleta.nome}
             </Text>

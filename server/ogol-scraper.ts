@@ -158,18 +158,39 @@ function parseOgolHtml(html: string): OgolPlayerData {
   }
 
   // Foto do atleta - múltiplos padrões
+  // Procura por img tags com src contendo foto/imagem do jogador
+  console.log(`[Ogol Parser] Procurando por foto...`);
   const fotoPatterns = [
+    // Padrão 1: img com class contendo "player"
     /<img[^>]*class="[^"]*player[^"]*"[^>]*src="([^"]+)"/i,
+    // Padrão 2: img com class contendo "photo"
     /<img[^>]*class="[^"]*photo[^"]*"[^>]*src="([^"]+)"/i,
+    // Padrão 3: img com class contendo "jogador"
     /<img[^>]*class="[^"]*jogador[^"]*"[^>]*src="([^"]+)"/i,
+    // Padrão 4: img com src contendo /jogador/
     /<img[^>]*src="([^"]*\/jogador\/[^"]+)"/i,
+    // Padrão 5: img com src contendo /player
     /<img[^>]*src="([^"]*\/player[^"]+)"/i,
+    // Padrão 6: img com src contendo /fotos/ ou /images/
+    /<img[^>]*src="([^"]*\/fotos\/[^"]+)"/i,
+    /<img[^>]*src="([^"]*\/images\/[^"]+)"/i,
+    // Padrão 7: Qualquer img dentro de divs com id/class de perfil
+    /<div[^>]*class="[^"]*perfil[^"]*"[^>]*>.*?<img[^>]*src="([^"]+)"/is,
+    // Padrão 8: img com alt contendo nome do jogador
+    /<img[^>]*alt="[^"]*jogador[^"]*"[^>]*src="([^"]+)"/i,
+    // Padrão 9: Procura por qualquer img com src que não seja placeholder
+    /<img[^>]*src="([^"]*(?:jpg|jpeg|png|webp)[^"]*jogador[^"]*)"/i,
+    /<img[^>]*src="([^"]*(?:jpg|jpeg|png|webp)[^"]*player[^"]*)"/i,
   ];
   
   for (const pattern of fotoPatterns) {
     const match = html.match(pattern);
     if (match?.[1]) {
       let fotoUrl = match[1].trim();
+      // Validar que não é um placeholder ou ícone
+      if (fotoUrl.includes("placeholder") || fotoUrl.includes("icon") || fotoUrl.includes("default")) {
+        continue;
+      }
       // Converter URLs relativas em absolutas
       if (fotoUrl.startsWith("/")) {
         fotoUrl = "https://www.ogol.com.br" + fotoUrl;
@@ -178,6 +199,24 @@ function parseOgolHtml(html: string): OgolPlayerData {
       }
       result.fotoUrl = fotoUrl;
       break;
+    }
+  }
+  
+  // Se não encontrou com os padrões, tenta uma busca mais genérica
+  if (!result.fotoUrl) {
+    // Procura por qualquer img tag com src que pareça uma foto
+    const genericPattern = /<img[^>]*src="([^"]*\.(?:jpg|jpeg|png|webp))[^"]*"[^>]*>/i;
+    const match = html.match(genericPattern);
+    if (match?.[1]) {
+      let fotoUrl = match[1].trim();
+      if (!fotoUrl.includes("placeholder") && !fotoUrl.includes("icon")) {
+        if (fotoUrl.startsWith("/")) {
+          fotoUrl = "https://www.ogol.com.br" + fotoUrl;
+        } else if (!fotoUrl.startsWith("http")) {
+          fotoUrl = "https://www.ogol.com.br/" + fotoUrl;
+        }
+        result.fotoUrl = fotoUrl;
+      }
     }
   }
 
@@ -233,6 +272,16 @@ export function registerOgolRoutes(app: any) {
       // Parsear os dados
       const data = parseOgolHtml(html);
       console.log(`[Ogol Scraper] Parsed data:`, JSON.stringify(data));
+      
+      // Debug: Log de imagens encontradas
+      const imgMatches = html.match(/<img[^>]*src="([^"]+)"[^>]*>/g) || [];
+      console.log(`[Ogol Scraper] Total de img tags encontradas: ${imgMatches.length}`);
+      if (imgMatches.length > 0) {
+        console.log(`[Ogol Scraper] Primeiras 5 img tags:`);
+        imgMatches.slice(0, 5).forEach((img, idx) => {
+          console.log(`  ${idx + 1}. ${img.substring(0, 150)}...`);
+        });
+      }
 
       res.json({ success: true, data });
     } catch (error: any) {

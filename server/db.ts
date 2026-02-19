@@ -1,9 +1,10 @@
-import { eq, and, like, gte, lte, or, desc } from "drizzle-orm";
+import { eq, and, like, gte, lte, or, desc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
   users,
   atletas,
+  midias,
   configuracaoCampos,
   configuracaoCamposPadrao,
   avaliacoes,
@@ -108,21 +109,52 @@ export async function getUserByOpenId(openId: string) {
 // ==================== ATLETAS ====================
 
 /**
- * Busca todos os atletas de um usuário
+ * Busca todos os atletas de um usuário com foto
  */
 export async function getAtletas(userId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db
+  const result = await db
     .select()
     .from(atletas)
     .where(eq(atletas.userId, userId))
     .orderBy(desc(atletas.createdAt));
+  
+  // Buscar fotos para cada atleta
+  if (result.length > 0) {
+    const { midias } = await import("../drizzle/schema");
+    const atletasIds = result.map(a => a.id);
+    
+    const fotos = await db
+      .select()
+      .from(midias)
+      .where(and(
+        inArray(midias.atletaId, atletasIds),
+        eq(midias.tipo, "foto")
+      ))
+      .orderBy(desc(midias.createdAt));
+    
+    // Criar mapa de fotos por atletaId
+    const fotoMap = new Map();
+    fotos.forEach(foto => {
+      if (foto.atletaId && !fotoMap.has(foto.atletaId)) {
+        fotoMap.set(foto.atletaId, foto.url);
+      }
+    });
+    
+    // Adicionar foto a cada atleta
+    return result.map(atleta => ({
+      ...atleta,
+      fotoUrl: fotoMap.get(atleta.id) || null
+    }));
+  }
+  
+  return result;
 }
 
 /**
- * Busca atleta por ID
+ * Busca atleta por ID com foto
  */
 export async function getAtletaById(id: number, userId: number) {
   const db = await getDb();
@@ -134,7 +166,25 @@ export async function getAtletaById(id: number, userId: number) {
     .where(and(eq(atletas.id, id), eq(atletas.userId, userId)))
     .limit(1);
   
-  return result[0] || null;
+  if (!result[0]) return null;
+  
+  const atleta = result[0];
+  
+  // Buscar foto do atleta
+  const fotos = await db
+    .select()
+    .from(midias)
+    .where(and(
+      eq(midias.atletaId, id),
+      eq(midias.tipo, "foto")
+    ))
+    .orderBy(desc(midias.createdAt))
+    .limit(1);
+  
+  return {
+    ...atleta,
+    fotoUrl: fotos[0]?.url || null
+  };
 }
 
 /**
@@ -563,7 +613,7 @@ export async function removeAllAtletasDoGrupo(grupoId: number) {
 
 // ==================== MÍDIA ====================
 
-import { midias, InsertMidia, Midia } from "../drizzle/schema";
+import { InsertMidia, Midia } from "../drizzle/schema";
 
 /**
  * Busca todas as mídias de um atleta
