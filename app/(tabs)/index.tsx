@@ -10,6 +10,8 @@ import {
   RefreshControl,
   Platform,
   Image,
+  Alert,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -17,7 +19,6 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
-import { Alert, Modal } from "react-native";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -37,11 +38,11 @@ export default function HomeScreen() {
   // Filtros
   const [selectedPosicao, setSelectedPosicao] = useState<string | null>(null);
   const [selectedClube, setSelectedClube] = useState<string | null>(null);
-  const [selectedIdadeFaixa, setSelectedIdadeFaixa] = useState(0); // index em FAIXAS_IDADE
+  const [selectedIdadeFaixa, setSelectedIdadeFaixa] = useState(0);
 
   const { data: atletas = [], isLoading, refetch } = trpc.atletas.list.useQuery();
 
-  // Extrair posições e clubes únicos dos dados
+  // Extrair posições e clubes únicos
   const posicoes = useMemo(() => {
     const set = new Set<string>();
     atletas.forEach((a) => { if (a.posicao) set.add(a.posicao); });
@@ -54,23 +55,19 @@ export default function HomeScreen() {
     return Array.from(set).sort();
   }, [atletas]);
 
-  // Filtragem combinada
+  // Filtragem
   const filteredAtletas = useMemo(() => {
     const faixa = FAIXAS_IDADE[selectedIdadeFaixa];
     return atletas.filter((atleta) => {
-      // Busca por nome
       if (searchQuery && !atleta.nome.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-      // Filtro por posição
       if (selectedPosicao && atleta.posicao !== selectedPosicao) {
         return false;
       }
-      // Filtro por clube
       if (selectedClube && atleta.clube !== selectedClube) {
         return false;
       }
-      // Filtro por faixa de idade
       if (faixa && faixa.min > 0) {
         const idade = atleta.idade ?? 0;
         if (idade < faixa.min || idade > faixa.max) {
@@ -175,39 +172,38 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer className="bg-background">
-      {/* Header com Logo */}
-      <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
-        <View className="flex-row justify-between items-center mb-4">
-          <View className="flex-row items-center gap-3 flex-1">
+      {/* Header */}
+      <View style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
             <Image
               source={require("@/assets/images/fabiano-scout-logo.png")}
               style={{ width: 48, height: 48 }}
               resizeMode="contain"
             />
             <View>
-              <Text className="text-2xl font-bold text-primary">Fabiano Scout</Text>
-              <Text className="text-xs text-muted mt-0.5">Análise de Atletas</Text>
+              <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>Fabiano Scout</Text>
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Análise de Atletas</Text>
             </View>
           </View>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/settings")}
-            className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" }}
           >
-            <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
+            <IconSymbol name="gearshape.fill" size={20} color="white" />
           </TouchableOpacity>
         </View>
 
         {/* Barra de Busca */}
-        <View className="flex-row gap-2">
-          <View className="flex-1 bg-surface rounded-full px-4 py-3 border border-border flex-row items-center">
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.border }}>
             <IconSymbol name="magnifyingglass" size={18} color={colors.muted} />
             <TextInput
               placeholder="Buscar atleta..."
               placeholderTextColor={colors.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 ml-2 text-foreground"
-              style={{ color: colors.foreground }}
+              style={{ flex: 1, marginLeft: 8, color: colors.foreground, fontSize: 14 }}
               returnKeyType="done"
             />
             {searchQuery.length > 0 && (
@@ -220,11 +216,15 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={() => setShowFilters(!showFilters)}
             style={{
-              backgroundColor: activeFilterCount > 0 ? colors.primary : colors.surface,
+              backgroundColor: activeFilterCount > 0 ? colors.error : colors.surface,
               borderWidth: activeFilterCount > 0 ? 0 : 1,
               borderColor: colors.border,
+              borderRadius: 20,
+              width: 44,
+              height: 44,
+              justifyContent: "center",
+              alignItems: "center",
             }}
-            className="rounded-full w-12 h-12 justify-center items-center"
           >
             <IconSymbol
               name="slider.horizontal.3"
@@ -233,23 +233,32 @@ export default function HomeScreen() {
             />
             {activeFilterCount > 0 && (
               <View
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full justify-center items-center"
-                style={{ backgroundColor: colors.error }}
+                style={{
+                  position: "absolute",
+                  top: -6,
+                  right: -6,
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: colors.error,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
               >
-                <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
+                <Text style={{ color: "white", fontSize: 10, fontWeight: "bold" }}>{activeFilterCount}</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Contador de Resultados */}
-        <View className="flex-row justify-between items-center mt-3">
-          <Text className="text-sm text-muted">
+        {/* Contador */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+          <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>
             {filteredAtletas.length} atleta{filteredAtletas.length !== 1 ? "s" : ""} encontrado{filteredAtletas.length !== 1 ? "s" : ""}
           </Text>
           {activeFilterCount > 0 && (
             <TouchableOpacity onPress={clearFilters}>
-              <Text className="text-sm text-primary font-medium">Limpar filtros</Text>
+              <Text style={{ fontSize: 12, color: "white", fontWeight: "600" }}>Limpar filtros</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -257,33 +266,25 @@ export default function HomeScreen() {
 
       {/* Painel de Filtros */}
       {showFilters && (
-        <View className="px-4 pb-3 bg-background border-b border-border">
-          {/* Filtro por Posição */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-2">
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          {/* Posição */}
+          <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, marginTop: 8 }}>
             Posição
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-            <View className="flex-row gap-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 onPress={() => setSelectedPosicao(null)}
                 style={{
                   backgroundColor: !selectedPosicao ? colors.primary : colors.surface,
                   borderWidth: !selectedPosicao ? 0 : 1,
                   borderColor: colors.border,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
                 }}
               >
-                <Text
-                  style={{
-                    color: !selectedPosicao ? "white" : colors.foreground,
-                    fontSize: 13,
-                    fontWeight: "600",
-                  }}
-                >
-                  Todas
-                </Text>
+                <Text style={{ color: !selectedPosicao ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Todas</Text>
               </TouchableOpacity>
               {posicoes.map((pos) => (
                 <TouchableOpacity
@@ -293,18 +294,12 @@ export default function HomeScreen() {
                     backgroundColor: selectedPosicao === pos ? colors.primary : colors.surface,
                     borderWidth: selectedPosicao === pos ? 0 : 1,
                     borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: selectedPosicao === pos ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
-                    }}
-                  >
+                  <Text style={{ color: selectedPosicao === pos ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>
                     {pos}
                   </Text>
                 </TouchableOpacity>
@@ -312,12 +307,12 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
 
-          {/* Filtro por Faixa de Idade */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+          {/* Idade */}
+          <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             Faixa de Idade
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-            <View className="flex-row gap-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
               {FAIXAS_IDADE.map((faixa, idx) => (
                 <TouchableOpacity
                   key={faixa.label}
@@ -326,18 +321,12 @@ export default function HomeScreen() {
                     backgroundColor: selectedIdadeFaixa === idx ? colors.primary : colors.surface,
                     borderWidth: selectedIdadeFaixa === idx ? 0 : 1,
                     borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: selectedIdadeFaixa === idx ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
-                    }}
-                  >
+                  <Text style={{ color: selectedIdadeFaixa === idx ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>
                     {faixa.label}
                   </Text>
                 </TouchableOpacity>
@@ -345,30 +334,24 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
 
-          {/* Filtro por Clube */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+          {/* Clube */}
+          <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             Clube
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
-            <View className="flex-row gap-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 onPress={() => setSelectedClube(null)}
                 style={{
                   backgroundColor: !selectedClube ? colors.primary : colors.surface,
                   borderWidth: !selectedClube ? 0 : 1,
                   borderColor: colors.border,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
                 }}
               >
-                <Text
-                  style={{
-                    color: !selectedClube ? "white" : colors.foreground,
-                    fontSize: 13,
-                    fontWeight: "600",
-                  }}
-                >
+                <Text style={{ color: !selectedClube ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>
                   Todos
                 </Text>
               </TouchableOpacity>
@@ -380,19 +363,12 @@ export default function HomeScreen() {
                     backgroundColor: selectedClube === clube ? colors.primary : colors.surface,
                     borderWidth: selectedClube === clube ? 0 : 1,
                     borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: selectedClube === clube ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
-                    }}
-                    numberOfLines={1}
-                  >
+                  <Text style={{ color: selectedClube === clube ? "white" : colors.foreground, fontSize: 12, fontWeight: "600", maxWidth: 100 }} numberOfLines={1}>
                     {clube}
                   </Text>
                 </TouchableOpacity>
@@ -402,21 +378,21 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Seção de Ordenação e Exportação */}
-      <View className="px-4 py-3 flex-row justify-between items-center border-b border-border">
-        <View className="flex-row gap-2 flex-1">
+      {/* Seção de Ordenação */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={{ flexDirection: "row", gap: 8, flex: 1 }}>
           <TouchableOpacity
             onPress={() => setSortBy("nome")}
             style={{
               backgroundColor: sortBy === "nome" ? colors.primary : colors.surface,
               borderWidth: sortBy === "nome" ? 0 : 1,
               borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 16,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 12,
             }}
           >
-            <Text style={{ color: sortBy === "nome" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Nome</Text>
+            <Text style={{ color: sortBy === "nome" ? "white" : colors.foreground, fontSize: 11, fontWeight: "600" }}>Nome</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setSortBy("idade")}
@@ -424,12 +400,12 @@ export default function HomeScreen() {
               backgroundColor: sortBy === "idade" ? colors.primary : colors.surface,
               borderWidth: sortBy === "idade" ? 0 : 1,
               borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 16,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 12,
             }}
           >
-            <Text style={{ color: sortBy === "idade" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Idade</Text>
+            <Text style={{ color: sortBy === "idade" ? "white" : colors.foreground, fontSize: 11, fontWeight: "600" }}>Idade</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setSortBy("altura")}
@@ -437,19 +413,15 @@ export default function HomeScreen() {
               backgroundColor: sortBy === "altura" ? colors.primary : colors.surface,
               borderWidth: sortBy === "altura" ? 0 : 1,
               borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 16,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 12,
             }}
           >
-            <Text style={{ color: sortBy === "altura" ? "white" : colors.foreground, fontSize: 12, fontWeight: "600" }}>Altura</Text>
+            <Text style={{ color: sortBy === "altura" ? "white" : colors.foreground, fontSize: 11, fontWeight: "600" }}>Altura</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={handleExcelPress}
-          disabled={generatingExcel}
-          style={{ marginLeft: 8 }}
-        >
+        <TouchableOpacity onPress={handleExcelPress} disabled={generatingExcel} style={{ marginLeft: 8 }}>
           <IconSymbol name="square.and.arrow.down" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -461,260 +433,97 @@ export default function HomeScreen() {
         renderItem={({ item }: { item: any }) => (
           <TouchableOpacity
             onPress={() => handleAtletaPress(item.id)}
-            className="mx-4 mb-3 bg-surface rounded-2xl p-4 border border-border flex-row items-center"
             style={{
-              shadowColor: colors.primary,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
+              marginHorizontal: 16,
+              marginVertical: 6,
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderWidth: 1,
+              borderColor: colors.border,
+              flexDirection: "row",
+              alignItems: "center",
             }}
           >
             {item.fotoUrl ? (
               <Image
                 source={{ uri: item.fotoUrl }}
-                style={{ width: 56, height: 56, borderRadius: 28, marginRight: 16 }}
+                style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
                 resizeMode="cover"
-                progressiveRenderingEnabled={true}
               />
             ) : (
-              <View className="w-14 h-14 rounded-full bg-primary/20 justify-center items-center mr-4">
-                <Text className="text-primary font-bold text-lg">
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center", marginRight: 12 }}>
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
                   {item.nome?.charAt(0).toUpperCase() || "?"}
                 </Text>
               </View>
             )}
 
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
                 {item.nome || "Sem nome"}
               </Text>
-              <View className="flex-row gap-2 mt-1 flex-wrap">
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
                 {item.posicao && (
-                  <View className="bg-primary/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-primary font-medium">
+                  <View style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 10, color: "white", fontWeight: "600" }}>
                       {item.posicao}
                     </Text>
                   </View>
                 )}
                 {item.clube && (
-                  <View className="bg-muted/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-muted font-medium" numberOfLines={1}>
-                      {item.clube}
-                    </Text>
-                  </View>
+                  <Text style={{ fontSize: 10, color: colors.muted }}>
+                    {item.clube}
+                  </Text>
                 )}
-                {item.idade != null && item.idade > 0 && (
-                  <View className="bg-success/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-success font-medium">
-                      {item.idade} anos
-                    </Text>
-                  </View>
+                {item.idade && (
+                  <Text style={{ fontSize: 10, color: colors.primary, fontWeight: "600" }}>
+                    {item.idade} anos
+                  </Text>
                 )}
               </View>
             </View>
 
-            <IconSymbol name="chevron.right" size={20} color={colors.muted} />
+            <IconSymbol name="chevron.right" size={18} color={colors.muted} />
           </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          !isLoading ? (
-            <View className="flex-1 justify-center items-center py-12">
-              <IconSymbol name="magnifyingglass" size={48} color={colors.muted} />
-              <Text className="text-lg font-semibold text-foreground mt-4">
-                Nenhum atleta encontrado
-              </Text>
-              <Text className="text-sm text-muted text-center mt-2 px-6">
-                {searchQuery || activeFilterCount > 0
-                  ? "Tente ajustar sua busca ou filtros"
-                  : "Comece adicionando um novo atleta"}
-              </Text>
-            </View>
-          ) : null
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
-        scrollEnabled={true}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        contentContainerStyle={{ paddingVertical: 8 }}
       />
 
-      {/* Modal de Confirmação do Relatório */}
-      <Modal
-        visible={showReportConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowReportConfirm(false)}
-      >
-        <View
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 24 }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.background,
-              borderRadius: 20,
-              padding: 24,
-              width: "100%",
-              maxWidth: 360,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.25,
-              shadowRadius: 16,
-              elevation: 10,
-            }}
-          >
-            {/* Ícone do topo */}
-            <View style={{ alignItems: "center", marginBottom: 16 }}>
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: colors.primary + "20",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <IconSymbol name="doc.text.fill" size={28} color={colors.primary} />
-              </View>
-            </View>
-
-            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.foreground, textAlign: "center", marginBottom: 4 }}>
-              Gerar Relatório PDF
+      {/* Modal de Confirmação de Relatório */}
+      <Modal visible={showReportConfirm} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 20, width: "80%", maxWidth: 300 }}>
+            <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.foreground, marginBottom: 12 }}>
+              Gerar Relatório?
             </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", marginBottom: 20 }}>
-              Confira os detalhes antes de gerar
+            <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 20 }}>
+              Será gerado um PDF com os {filteredAtletas.length} atleta(s) filtrado(s).
             </Text>
-
-            {/* Resumo */}
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 20,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              {/* Quantidade de atletas */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <Text style={{ fontSize: 14, color: colors.muted }}>Atletas incluídos</Text>
-                <View style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "white" }}>{filteredAtletas.length}</Text>
-                </View>
-              </View>
-
-              {/* Separador */}
-              <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
-
-              {/* Filtros aplicados */}
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
-                Filtros aplicados
-              </Text>
-
-              <View style={{ gap: 6 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Posição</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedPosicao || "Todas"}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Faixa de Idade</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas"}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Clube</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                    {selectedClube || "Todos"}
-                  </Text>
-                </View>
-                {searchQuery ? (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <Text style={{ fontSize: 13, color: colors.muted }}>Busca</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                      "{searchQuery}"
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-
-            {/* Botões */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
                 onPress={() => setShowReportConfirm(false)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  alignItems: "center",
-                }}
+                style={{ flex: 1, paddingVertical: 10, backgroundColor: colors.border, borderRadius: 8, justifyContent: "center", alignItems: "center" }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>Cancelar</Text>
+                <Text style={{ color: colors.foreground, fontWeight: "600" }}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleConfirmReport}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: colors.primary,
-                  alignItems: "center",
-                }}
+                disabled={generatingPdf}
+                style={{ flex: 1, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 8, justifyContent: "center", alignItems: "center" }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>Gerar PDF</Text>
+                {generatingPdf ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={{ color: "white", fontWeight: "600" }}>Gerar</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
-      {/* FAB - Botão Gerar Relatório */}
-      <TouchableOpacity
-        onPress={handleReportPress}
-        disabled={generatingPdf}
-        className="absolute bottom-8 right-24 w-14 h-14 rounded-full justify-center items-center"
-        style={{
-          backgroundColor: generatingPdf ? colors.muted : colors.foreground,
-          shadowColor: colors.foreground,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-          elevation: 6,
-        }}
-      >
-        {generatingPdf ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <IconSymbol name="doc.text.fill" size={22} color={colors.background} />
-        )}
-      </TouchableOpacity>
-
-      {/* FAB - Botão Adicionar */}
-      <TouchableOpacity
-        onPress={handleAddAtleta}
-        className="absolute bottom-8 right-4 w-16 h-16 rounded-full bg-primary justify-center items-center"
-        style={{
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}
-      >
-        <Text className="text-white text-3xl font-bold">+</Text>
-      </TouchableOpacity>
     </ScreenContainer>
   );
 }

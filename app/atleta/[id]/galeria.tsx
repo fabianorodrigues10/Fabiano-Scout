@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -65,27 +66,163 @@ export default function GaleriaScreen() {
     );
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    header: {
+      backgroundColor: colors.primary + "20",
+      paddingTop: 16,
+      paddingBottom: 24,
+      paddingHorizontal: 16,
+    },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 16,
+    },
+    backButton: {
+      backgroundColor: colors.background,
+      borderRadius: 24,
+      padding: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    addButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 24,
+      padding: 8,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: colors.foreground,
+      textAlign: "center",
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+      marginTop: 8,
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingBottom: 32,
+    },
+    emptyContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      paddingVertical: 32,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 32,
+    },
+    emptyIcon: {
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: colors.foreground,
+      textAlign: "center",
+      marginBottom: 8,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: colors.muted,
+      textAlign: "center",
+      marginBottom: 24,
+    },
+    emptyButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+    },
+    emptyButtonText: {
+      color: "white",
+      fontWeight: "600",
+    },
+    fotosContainer: {
+      gap: 16,
+      marginTop: 16,
+    },
+    fotoCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    fotoImage: {
+      width: "100%",
+      height: 250,
+    },
+    fotoInfo: {
+      padding: 16,
+    },
+    fotoHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 12,
+    },
+    fotoContent: {
+      flex: 1,
+    },
+    fotoName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.foreground,
+    },
+    fotoDescription: {
+      fontSize: 14,
+      color: colors.muted,
+      marginTop: 4,
+    },
+    deleteButton: {
+      backgroundColor: colors.error + "15",
+      borderRadius: 12,
+      padding: 8,
+    },
+    fotoDate: {
+      fontSize: 12,
+      color: colors.muted,
+    },
+  });
+
   if (atletaLoading || midiasLoading) {
     return (
-      <ScreenContainer className="justify-center items-center">
-        <ActivityIndicator size="large" color={colors.primary} />
+      <ScreenContainer>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </ScreenContainer>
     );
   }
 
   if (!atleta) {
     return (
-      <ScreenContainer className="justify-center items-center p-6">
-        <IconSymbol name="person.crop.circle.badge.exclamationmark" size={64} color={colors.error} />
-        <Text className="text-lg font-bold text-foreground text-center mt-4 mb-2">
-          Atleta não encontrado
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-primary rounded-lg px-6 py-3 mt-4"
-        >
-          <Text className="text-white font-semibold">Voltar</Text>
-        </TouchableOpacity>
+      <ScreenContainer>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
+          <IconSymbol name="person.crop.circle.badge.exclamationmark" size={64} color={colors.error} />
+          <Text style={[styles.emptyTitle, { marginTop: 16 }]}>
+            Atleta não encontrado
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.emptyButton, { marginTop: 16 }]}
+          >
+            <Text style={styles.emptyButtonText}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
       </ScreenContainer>
     );
   }
@@ -94,13 +231,13 @@ export default function GaleriaScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className="bg-gradient-to-b from-primary/20 to-background pt-4 pb-6 px-4">
-          <View className="flex-row justify-between items-start mb-4">
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
             <TouchableOpacity
               onPress={() => router.back()}
-              className="bg-background rounded-full p-2 border border-border"
+              style={styles.backButton}
             >
               <IconSymbol
                 name="chevron.right"
@@ -111,77 +248,77 @@ export default function GaleriaScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleAdicionarFoto}
-              className="bg-primary rounded-full p-2"
+              style={styles.addButton}
             >
               <IconSymbol name="plus" size={18} color="white" />
             </TouchableOpacity>
           </View>
 
-          <Text className="text-2xl font-bold text-foreground text-center">
+          <Text style={styles.headerTitle}>
             Galeria de {atleta.nome}
           </Text>
-          <Text className="text-sm text-muted text-center mt-2">
+          <Text style={styles.headerSubtitle}>
             {fotos.length} foto{fotos.length !== 1 ? "s" : ""}
           </Text>
         </View>
 
         {/* Conteúdo */}
-        <View className="px-4 pb-8">
+        <View style={styles.content}>
           {fotos.length === 0 ? (
-            <View className="bg-surface rounded-2xl p-8 border border-border items-center justify-center mt-8">
+            <View style={styles.emptyContainer}>
               <IconSymbol name="photo.fill" size={48} color={colors.muted} />
-              <Text className="text-lg font-semibold text-foreground mt-4 text-center">
+              <Text style={styles.emptyTitle}>
                 Nenhuma foto adicionada
               </Text>
-              <Text className="text-sm text-muted text-center mt-2 mb-6">
+              <Text style={styles.emptyText}>
                 Clique no botão + para adicionar fotos do atleta
               </Text>
               <TouchableOpacity
                 onPress={handleAdicionarFoto}
-                className="bg-primary rounded-lg px-6 py-3"
+                style={styles.emptyButton}
               >
-                <Text className="text-white font-semibold">Adicionar Foto</Text>
+                <Text style={styles.emptyButtonText}>Adicionar Foto</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="gap-4 mt-4">
+            <View style={styles.fotosContainer}>
               {fotos.map((foto) => (
                 <View
                   key={foto.id}
-                  className="bg-surface rounded-2xl overflow-hidden border border-border shadow-sm"
+                  style={styles.fotoCard}
                 >
                   {/* Imagem */}
                   {foto.url && (
                     <Image
                       source={{ uri: foto.url }}
-                      style={{ width: "100%", height: 250 }}
+                      style={styles.fotoImage}
                       resizeMode="cover"
                     />
                   )}
 
                   {/* Informações */}
-                  <View className="p-4">
-                    <View className="flex-row justify-between items-start mb-3">
-                      <View className="flex-1">
-                        <Text className="text-base font-semibold text-foreground">
+                  <View style={styles.fotoInfo}>
+                    <View style={styles.fotoHeader}>
+                      <View style={styles.fotoContent}>
+                        <Text style={styles.fotoName}>
                           {foto.nome}
                         </Text>
                         {foto.descricao && (
-                          <Text className="text-sm text-muted mt-1">
+                          <Text style={styles.fotoDescription}>
                             {foto.descricao}
                           </Text>
                         )}
                       </View>
                       <TouchableOpacity
                         onPress={() => handleDeletarFoto(foto.id)}
-                        className="bg-error/10 rounded-full p-2"
+                        style={styles.deleteButton}
                       >
                         <IconSymbol name="trash" size={16} color={colors.error} />
                       </TouchableOpacity>
                     </View>
 
                     {/* Data */}
-                    <Text className="text-xs text-muted">
+                    <Text style={styles.fotoDate}>
                       {new Date(foto.createdAt).toLocaleDateString("pt-BR")}
                     </Text>
                   </View>

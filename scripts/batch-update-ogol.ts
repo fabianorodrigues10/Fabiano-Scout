@@ -6,7 +6,7 @@
 import { getDb } from "../server/db";
 import { atletas } from "../drizzle/schema";
 import { eq, isNull, or } from "drizzle-orm";
-import puppeteer from "puppeteer";
+// import puppeteer from "puppeteer"; // Removido - não instalado
 
 interface OgolData {
   dataNascimento: string | null;
@@ -45,8 +45,13 @@ function extractOgolData(html: string): OgolData {
 
 /**
  * Executa o script
+ * DESATIVADO: Puppeteer não instalado
  */
 async function main() {
+  console.log("[Batch Update Ogol] Script desativado - Puppeteer não instalado");
+  process.exit(0);
+  return;
+  /*
   console.log("[Batch Update Ogol] Iniciando...");
 
   const db = await getDb();
@@ -159,6 +164,9 @@ async function main() {
   }
 
   process.exit(0);
+}
+
+*/
 }
 
 main().catch((error) => {

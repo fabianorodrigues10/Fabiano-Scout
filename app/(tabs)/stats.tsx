@@ -1,6 +1,4 @@
-"use client";
-
-import { View, Text, ScrollView, Dimensions, TouchableOpacity, Modal, FlatList } from "react-native";
+import { View, Text, ScrollView, Dimensions, TouchableOpacity, Modal, FlatList, StyleSheet } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -200,7 +198,6 @@ export default function StatsScreen() {
       });
 
       if (resultado.success && resultado.pdfBase64) {
-        // Converter Base64 para Blob
         const binaryString = atob(resultado.pdfBase64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -208,10 +205,8 @@ export default function StatsScreen() {
         }
         const blob = new Blob([bytes], { type: "application/pdf" });
         
-        // Criar URL do blob
         const url = URL.createObjectURL(blob);
         
-        // Criar link de download
         const link = document.createElement("a");
         link.href = url;
         link.download = `Relatorio_Atletas_${new Date().toISOString().split("T")[0]}.pdf`;
@@ -237,15 +232,301 @@ export default function StatsScreen() {
     });
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingBottom: 20,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: colors.foreground,
+    },
+    filterButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 24,
+      padding: 12,
+    },
+    tagsContainer: {
+      paddingHorizontal: 16,
+      marginBottom: 16,
+    },
+    tagsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    tag: {
+      backgroundColor: colors.primary + "33",
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    tagText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    resumo: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      borderRadius: 12,
+    },
+    resumoText: {
+      color: colors.foreground,
+      fontWeight: "600",
+    },
+    actionButtons: {
+      flexDirection: "row",
+      gap: 12,
+      paddingHorizontal: 16,
+      marginBottom: 16,
+    },
+    actionButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    actionButtonSecondary: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    actionButtonText: {
+      color: colors.background,
+      fontWeight: "600",
+    },
+    actionButtonTextSecondary: {
+      color: colors.foreground,
+      fontWeight: "600",
+    },
+    statsSection: {
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    statsSectionTitle: {
+      fontSize: 16,
+      fontWeight: "bold",
+      color: colors.foreground,
+      marginBottom: 12,
+    },
+    statsCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    statRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    statRowLast: {
+      borderBottomWidth: 0,
+    },
+    statLabel: {
+      color: colors.foreground,
+      fontWeight: "500",
+    },
+    statValue: {
+      color: colors.primary,
+      fontWeight: "bold",
+    },
+    chartContainer: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: "center",
+      overflow: "hidden",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+      flex: 1,
+      backgroundColor: colors.background,
+      marginTop: 48,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: colors.foreground,
+    },
+    tabsContainer: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 12,
+      alignItems: "center",
+      borderBottomWidth: 2,
+      borderBottomColor: "transparent",
+    },
+    tabActive: {
+      borderBottomColor: colors.primary,
+    },
+    tabText: {
+      fontWeight: "600",
+      fontSize: 14,
+      color: colors.muted,
+      textTransform: "capitalize",
+    },
+    tabTextActive: {
+      color: colors.primary,
+    },
+    modalScroll: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    filterItem: {
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      marginBottom: 8,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    filterItemActive: {
+      backgroundColor: colors.primary + "33",
+      borderColor: colors.primary,
+    },
+    filterItemText: {
+      fontWeight: "500",
+      color: colors.foreground,
+    },
+    filterItemTextActive: {
+      color: colors.primary,
+    },
+    modalFooter: {
+      flexDirection: "row",
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    listItem: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      borderWidth: 2,
+      marginRight: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      borderColor: colors.border,
+    },
+    checkboxActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    checkboxText: {
+      color: colors.background,
+      fontWeight: "bold",
+      fontSize: 12,
+    },
+    listItemContent: {
+      flex: 1,
+    },
+    listItemName: {
+      color: colors.foreground,
+      fontWeight: "600",
+    },
+    listItemSubtitle: {
+      color: colors.muted,
+      fontSize: 12,
+    },
+    tableItem: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tableItemName: {
+      color: colors.foreground,
+      fontWeight: "600",
+    },
+    tableTags: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 8,
+      flexWrap: "wrap",
+    },
+    tableTag: {
+      backgroundColor: colors.surface,
+      borderRadius: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    tableTagText: {
+      color: colors.muted,
+      fontSize: 12,
+    },
+    tableItemNote: {
+      color: colors.muted,
+      fontSize: 12,
+      marginTop: 8,
+      fontStyle: "italic",
+    },
+  });
+
   return (
-    <ScreenContainer className="bg-background">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 20 }}>
+    <ScreenContainer>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         {/* Header com Botão de Filtro */}
-        <View className="flex-row justify-between items-center px-4 py-4">
-          <Text className="text-2xl font-bold text-foreground">Estatísticas</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Estatísticas</Text>
           <TouchableOpacity
             onPress={() => setShowFiltros(true)}
-            className="bg-primary rounded-full p-3"
+            style={styles.filterButton}
           >
             <IconSymbol name="line.horizontal.3" size={24} color={colors.background} />
           </TouchableOpacity>
@@ -253,27 +534,27 @@ export default function StatsScreen() {
 
         {/* Filtros Ativos */}
         {(filtros.posicoes.length > 0 || filtros.idades.length > 0 || filtros.clubes.length > 0 || filtros.escalas.length > 0) && (
-          <View className="px-4 mb-4">
-            <View className="flex-row flex-wrap gap-2">
+          <View style={styles.tagsContainer}>
+            <View style={styles.tagsRow}>
               {filtros.posicoes.map((p) => (
-                <View key={p} className="bg-primary/20 rounded-full px-3 py-1 flex-row items-center gap-2">
-                  <Text className="text-primary text-xs font-semibold">{p}</Text>
+                <View key={p} style={styles.tag}>
+                  <Text style={styles.tagText}>{p}</Text>
                   <TouchableOpacity onPress={() => setFiltros({ ...filtros, posicoes: filtros.posicoes.filter((x) => x !== p) })}>
                     <IconSymbol name="xmark" size={12} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
               ))}
               {filtros.idades.map((i) => (
-                <View key={i} className="bg-primary/20 rounded-full px-3 py-1 flex-row items-center gap-2">
-                  <Text className="text-primary text-xs font-semibold">{i}-{i + 4}</Text>
+                <View key={i} style={styles.tag}>
+                  <Text style={styles.tagText}>{i}-{i + 4}</Text>
                   <TouchableOpacity onPress={() => setFiltros({ ...filtros, idades: filtros.idades.filter((x) => x !== i) })}>
                     <IconSymbol name="xmark" size={12} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
               ))}
               {filtros.clubes.map((c) => (
-                <View key={c} className="bg-primary/20 rounded-full px-3 py-1 flex-row items-center gap-2">
-                  <Text className="text-primary text-xs font-semibold">{c}</Text>
+                <View key={c} style={styles.tag}>
+                  <Text style={styles.tagText}>{c}</Text>
                   <TouchableOpacity onPress={() => setFiltros({ ...filtros, clubes: filtros.clubes.filter((x) => x !== c) })}>
                     <IconSymbol name="xmark" size={12} color={colors.primary} />
                   </TouchableOpacity>
@@ -284,85 +565,85 @@ export default function StatsScreen() {
         )}
 
         {/* Resumo */}
-        <View className="px-4 py-3 bg-surface mx-4 rounded-xl mb-4">
-          <Text className="text-foreground font-semibold">
+        <View style={styles.resumo}>
+          <Text style={styles.resumoText}>
             {atletasSelecionados.length > 0 ? atletasSelecionados.length : atletasFiltrados.length} atleta(s) selecionado(s)
           </Text>
         </View>
 
         {/* Botões de Ação */}
-        <View className="flex-row gap-3 px-4 mb-4">
+        <View style={styles.actionButtons}>
           <TouchableOpacity
             onPress={() => setShowSelecao(true)}
-            className="flex-1 bg-primary rounded-lg py-3 items-center"
+            style={styles.actionButton}
           >
-            <Text className="text-background font-semibold">Selecionar</Text>
+            <Text style={styles.actionButtonText}>Selecionar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowTabela(true)}
-            className="flex-1 bg-surface border border-border rounded-lg py-3 items-center"
+            style={styles.actionButtonSecondary}
           >
-            <Text className="text-foreground font-semibold">Tabela</Text>
+            <Text style={styles.actionButtonTextSecondary}>Tabela</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleGerarRelatorio}
-            className="flex-1 bg-surface border border-border rounded-lg py-3 items-center"
+            style={styles.actionButtonSecondary}
           >
-            <Text className="text-foreground font-semibold">Relatório</Text>
+            <Text style={styles.actionButtonTextSecondary}>Relatório</Text>
           </TouchableOpacity>
         </View>
 
         {/* Estatísticas */}
         {stats.totalAtletas > 0 && (
           <>
-            <View className="px-4 py-4">
-              <Text className="text-base font-bold text-foreground mb-3">Estatísticas de Idade</Text>
-              <View className="bg-surface rounded-xl overflow-hidden">
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Média</Text>
-                  <Text className="text-primary font-bold">{stats.idadeMedia} anos</Text>
+            <View style={styles.statsSection}>
+              <Text style={styles.statsSectionTitle}>Estatísticas de Idade</Text>
+              <View style={styles.statsCard}>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Média</Text>
+                  <Text style={styles.statValue}>{stats.idadeMedia} anos</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Mediana</Text>
-                  <Text className="text-primary font-bold">{stats.idadeMediana} anos</Text>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Mediana</Text>
+                  <Text style={styles.statValue}>{stats.idadeMediana} anos</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Mínima</Text>
-                  <Text className="text-primary font-bold">{stats.idadeMin} anos</Text>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Mínima</Text>
+                  <Text style={styles.statValue}>{stats.idadeMin} anos</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3">
-                  <Text className="text-foreground font-medium">Máxima</Text>
-                  <Text className="text-primary font-bold">{stats.idadeMax} anos</Text>
+                <View style={[styles.statRow, styles.statRowLast]}>
+                  <Text style={styles.statLabel}>Máxima</Text>
+                  <Text style={styles.statValue}>{stats.idadeMax} anos</Text>
                 </View>
               </View>
             </View>
 
-            <View className="px-4 py-4">
-              <Text className="text-base font-bold text-foreground mb-3">Estatísticas de Altura</Text>
-              <View className="bg-surface rounded-xl overflow-hidden">
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Média</Text>
-                  <Text className="text-primary font-bold">{stats.alturaMedia} m</Text>
+            <View style={styles.statsSection}>
+              <Text style={styles.statsSectionTitle}>Estatísticas de Altura</Text>
+              <View style={styles.statsCard}>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Média</Text>
+                  <Text style={styles.statValue}>{stats.alturaMedia} m</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Mediana</Text>
-                  <Text className="text-primary font-bold">{stats.alturaMediana} m</Text>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Mediana</Text>
+                  <Text style={styles.statValue}>{stats.alturaMediana} m</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-medium">Mínima</Text>
-                  <Text className="text-primary font-bold">{stats.alturaMin} m</Text>
+                <View style={[styles.statRow]}>
+                  <Text style={styles.statLabel}>Mínima</Text>
+                  <Text style={styles.statValue}>{stats.alturaMin} m</Text>
                 </View>
-                <View className="flex-row justify-between items-center px-4 py-3">
-                  <Text className="text-foreground font-medium">Máxima</Text>
-                  <Text className="text-primary font-bold">{stats.alturaMax} m</Text>
+                <View style={[styles.statRow, styles.statRowLast]}>
+                  <Text style={styles.statLabel}>Máxima</Text>
+                  <Text style={styles.statValue}>{stats.alturaMax} m</Text>
                 </View>
               </View>
             </View>
 
             {posicoesPorcentagem.length > 0 && (
-              <View className="px-4 py-4">
-                <Text className="text-base font-bold text-foreground mb-3">Distribuição de Posições</Text>
-                <View className="bg-surface rounded-xl p-3 items-center overflow-hidden">
+              <View style={styles.statsSection}>
+                <Text style={styles.statsSectionTitle}>Distribuição de Posições</Text>
+                <View style={styles.chartContainer}>
                   <PieChart
                     data={posicoesPorcentagem}
                     width={screenWidth - 60}
@@ -378,9 +659,9 @@ export default function StatsScreen() {
             )}
 
             {idadesPorcentagem.length > 0 && (
-              <View className="px-4 py-4">
-                <Text className="text-base font-bold text-foreground mb-3">Distribuição de Idades</Text>
-                <View className="bg-surface rounded-xl p-3 overflow-hidden">
+              <View style={styles.statsSection}>
+                <Text style={styles.statsSectionTitle}>Distribuição de Idades</Text>
+                <View style={styles.chartContainer}>
                   <BarChart
                     data={{
                       labels: idadesPorcentagem.map((item) => item.name),
@@ -403,30 +684,30 @@ export default function StatsScreen() {
           </>
         )}
 
-        <View className="h-8" />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
       {/* Modal de Filtros com Abas */}
       <Modal visible={showFiltros} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50">
-          <View className="flex-1 bg-background mt-12 rounded-t-3xl">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
             {/* Header */}
-            <View className="flex-row justify-between items-center px-4 py-4 border-b border-border">
-              <Text className="text-xl font-bold text-foreground">Filtros</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filtros</Text>
               <TouchableOpacity onPress={() => setShowFiltros(false)}>
                 <IconSymbol name="xmark" size={24} color={colors.foreground} />
               </TouchableOpacity>
             </View>
 
             {/* Abas */}
-            <View className="flex-row border-b border-border">
+            <View style={styles.tabsContainer}>
               {(["posicao", "idade", "clube", "escala"] as const).map((aba) => (
                 <TouchableOpacity
                   key={aba}
                   onPress={() => setAbaFiltros(aba)}
-                  className={`flex-1 py-3 items-center border-b-2 ${abaFiltros === aba ? "border-primary" : "border-transparent"}`}
+                  style={[styles.tab, abaFiltros === aba && styles.tabActive]}
                 >
-                  <Text className={`font-semibold capitalize ${abaFiltros === aba ? "text-primary" : "text-muted"}`}>
+                  <Text style={[styles.tabText, abaFiltros === aba && styles.tabTextActive]}>
                     {aba === "posicao" ? "Posição" : aba === "idade" ? "Idade" : aba === "clube" ? "Clube" : "Escala"}
                   </Text>
                 </TouchableOpacity>
@@ -434,9 +715,9 @@ export default function StatsScreen() {
             </View>
 
             {/* Conteúdo das Abas */}
-            <ScrollView className="flex-1 px-4 py-4">
+            <ScrollView style={styles.modalScroll}>
               {abaFiltros === "posicao" && (
-                <View className="gap-2">
+                <View>
                   {posicoes.map((pos) => (
                     <TouchableOpacity
                       key={pos}
@@ -448,11 +729,9 @@ export default function StatsScreen() {
                             : [...filtros.posicoes, pos],
                         });
                       }}
-                      className={`p-3 rounded-lg border ${
-                        filtros.posicoes.includes(pos) ? "bg-primary/20 border-primary" : "bg-surface border-border"
-                      }`}
+                      style={[styles.filterItem, filtros.posicoes.includes(pos) && styles.filterItemActive]}
                     >
-                      <Text className={`font-medium ${filtros.posicoes.includes(pos) ? "text-primary" : "text-foreground"}`}>
+                      <Text style={[styles.filterItemText, filtros.posicoes.includes(pos) && styles.filterItemTextActive]}>
                         {pos}
                       </Text>
                     </TouchableOpacity>
@@ -461,7 +740,7 @@ export default function StatsScreen() {
               )}
 
               {abaFiltros === "idade" && (
-                <View className="gap-2">
+                <View>
                   {[15, 20, 25, 30, 35, 40].map((idade) => (
                     <TouchableOpacity
                       key={idade}
@@ -473,11 +752,9 @@ export default function StatsScreen() {
                             : [...filtros.idades, idade],
                         });
                       }}
-                      className={`p-3 rounded-lg border ${
-                        filtros.idades.includes(idade) ? "bg-primary/20 border-primary" : "bg-surface border-border"
-                      }`}
+                      style={[styles.filterItem, filtros.idades.includes(idade) && styles.filterItemActive]}
                     >
-                      <Text className={`font-medium ${filtros.idades.includes(idade) ? "text-primary" : "text-foreground"}`}>
+                      <Text style={[styles.filterItemText, filtros.idades.includes(idade) && styles.filterItemTextActive]}>
                         {idade}-{idade + 4} anos
                       </Text>
                     </TouchableOpacity>
@@ -486,7 +763,7 @@ export default function StatsScreen() {
               )}
 
               {abaFiltros === "clube" && (
-                <View className="gap-2">
+                <View>
                   {clubes.map((clube) => (
                     <TouchableOpacity
                       key={clube}
@@ -498,11 +775,9 @@ export default function StatsScreen() {
                             : [...filtros.clubes, clube],
                         });
                       }}
-                      className={`p-3 rounded-lg border ${
-                        filtros.clubes.includes(clube) ? "bg-primary/20 border-primary" : "bg-surface border-border"
-                      }`}
+                      style={[styles.filterItem, filtros.clubes.includes(clube) && styles.filterItemActive]}
                     >
-                      <Text className={`font-medium ${filtros.clubes.includes(clube) ? "text-primary" : "text-foreground"}`}>
+                      <Text style={[styles.filterItemText, filtros.clubes.includes(clube) && styles.filterItemTextActive]}>
                         {clube}
                       </Text>
                     </TouchableOpacity>
@@ -511,7 +786,7 @@ export default function StatsScreen() {
               )}
 
               {abaFiltros === "escala" && (
-                <View className="gap-2">
+                <View>
                   {escalas.map((escala) => (
                     <TouchableOpacity
                       key={escala}
@@ -523,11 +798,9 @@ export default function StatsScreen() {
                             : [...filtros.escalas, escala],
                         });
                       }}
-                      className={`p-3 rounded-lg border ${
-                        filtros.escalas.includes(escala) ? "bg-primary/20 border-primary" : "bg-surface border-border"
-                      }`}
+                      style={[styles.filterItem, filtros.escalas.includes(escala) && styles.filterItemActive]}
                     >
-                      <Text className={`font-medium ${filtros.escalas.includes(escala) ? "text-primary" : "text-foreground"}`}>
+                      <Text style={[styles.filterItemText, filtros.escalas.includes(escala) && styles.filterItemTextActive]}>
                         {escala}
                       </Text>
                     </TouchableOpacity>
@@ -537,18 +810,18 @@ export default function StatsScreen() {
             </ScrollView>
 
             {/* Botões de Ação */}
-            <View className="flex-row gap-3 px-4 py-4 border-t border-border">
+            <View style={styles.modalFooter}>
               <TouchableOpacity
                 onPress={handleLimparFiltros}
-                className="flex-1 bg-surface border border-border rounded-lg py-3 items-center"
+                style={styles.actionButtonSecondary}
               >
-                <Text className="text-foreground font-semibold">Limpar</Text>
+                <Text style={styles.actionButtonTextSecondary}>Limpar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowFiltros(false)}
-                className="flex-1 bg-primary rounded-lg py-3 items-center"
+                style={styles.actionButton}
               >
-                <Text className="text-background font-semibold">Aplicar</Text>
+                <Text style={styles.actionButtonText}>Aplicar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -557,10 +830,10 @@ export default function StatsScreen() {
 
       {/* Modal de Seleção de Atletas */}
       <Modal visible={showSelecao} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50">
-          <View className="flex-1 bg-background mt-12 rounded-t-3xl">
-            <View className="flex-row justify-between items-center px-4 py-4 border-b border-border">
-              <Text className="text-xl font-bold text-foreground">Selecionar Atletas</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selecionar Atletas</Text>
               <TouchableOpacity onPress={() => setShowSelecao(false)}>
                 <IconSymbol name="xmark" size={24} color={colors.foreground} />
               </TouchableOpacity>
@@ -578,37 +851,39 @@ export default function StatsScreen() {
                         : [...atletasSelecionados, item.id]
                     );
                   }}
-                  className={`px-4 py-3 border-b border-border flex-row items-center ${
-                    atletasSelecionados.includes(item.id) ? "bg-primary/10" : ""
-                  }`}
+                  style={[
+                    styles.listItem,
+                    atletasSelecionados.includes(item.id) && { backgroundColor: colors.primary + "10" }
+                  ]}
                 >
-                  <View className={`w-5 h-5 rounded border-2 mr-3 items-center justify-center ${
-                    atletasSelecionados.includes(item.id) ? "bg-primary border-primary" : "border-border"
-                  }`}>
+                  <View style={[
+                    styles.checkbox,
+                    atletasSelecionados.includes(item.id) && styles.checkboxActive
+                  ]}>
                     {atletasSelecionados.includes(item.id) && (
-                      <Text className="text-background font-bold text-xs">✓</Text>
+                      <Text style={styles.checkboxText}>✓</Text>
                     )}
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-foreground font-semibold">{item.nome}</Text>
-                    <Text className="text-muted text-xs">{item.posicao} • {item.idade} anos</Text>
+                  <View style={styles.listItemContent}>
+                    <Text style={styles.listItemName}>{item.nome}</Text>
+                    <Text style={styles.listItemSubtitle}>{item.posicao} • {item.idade} anos</Text>
                   </View>
                 </TouchableOpacity>
               )}
             />
 
-            <View className="flex-row gap-3 px-4 py-4 border-t border-border">
+            <View style={styles.modalFooter}>
               <TouchableOpacity
                 onPress={() => setAtletasSelecionados([])}
-                className="flex-1 bg-surface border border-border rounded-lg py-3 items-center"
+                style={styles.actionButtonSecondary}
               >
-                <Text className="text-foreground font-semibold">Limpar</Text>
+                <Text style={styles.actionButtonTextSecondary}>Limpar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowSelecao(false)}
-                className="flex-1 bg-primary rounded-lg py-3 items-center"
+                style={styles.actionButton}
               >
-                <Text className="text-background font-semibold">Fechar</Text>
+                <Text style={styles.actionButtonText}>Fechar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -617,10 +892,10 @@ export default function StatsScreen() {
 
       {/* Modal de Tabela */}
       <Modal visible={showTabela} animationType="slide" transparent>
-        <View className="flex-1 bg-black/50">
-          <View className="flex-1 bg-background mt-12 rounded-t-3xl">
-            <View className="flex-row justify-between items-center px-4 py-4 border-b border-border">
-              <Text className="text-xl font-bold text-foreground">Comparativo de Atletas</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Comparativo de Atletas</Text>
               <TouchableOpacity onPress={() => setShowTabela(false)}>
                 <IconSymbol name="xmark" size={24} color={colors.foreground} />
               </TouchableOpacity>
@@ -630,26 +905,26 @@ export default function StatsScreen() {
               data={atletasSelecionados.length > 0 ? atletasFiltrados.filter((a: any) => atletasSelecionados.includes(a.id)) : atletasFiltrados}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
-                <View className="px-4 py-3 border-b border-border">
-                  <Text className="text-foreground font-semibold">{item.nome}</Text>
-                  <View className="flex-row gap-2 mt-2 flex-wrap">
-                    <View className="bg-surface rounded px-2 py-1">
-                      <Text className="text-muted text-xs">{item.posicao}</Text>
+                <View style={styles.tableItem}>
+                  <Text style={styles.tableItemName}>{item.nome}</Text>
+                  <View style={styles.tableTags}>
+                    <View style={styles.tableTag}>
+                      <Text style={styles.tableTagText}>{item.posicao}</Text>
                     </View>
-                    <View className="bg-surface rounded px-2 py-1">
-                      <Text className="text-muted text-xs">{item.idade} anos</Text>
+                    <View style={styles.tableTag}>
+                      <Text style={styles.tableTagText}>{item.idade} anos</Text>
                     </View>
-                    <View className="bg-surface rounded px-2 py-1">
-                      <Text className="text-muted text-xs">{item.altura}m</Text>
+                    <View style={styles.tableTag}>
+                      <Text style={styles.tableTagText}>{item.altura}m</Text>
                     </View>
                     {item.segundaPosicao && (
-                      <View className="bg-surface rounded px-2 py-1">
-                        <Text className="text-muted text-xs">{item.segundaPosicao}</Text>
+                      <View style={styles.tableTag}>
+                        <Text style={styles.tableTagText}>{item.segundaPosicao}</Text>
                       </View>
                     )}
                   </View>
                   {item.valencia && (
-                    <Text className="text-muted text-xs mt-2 italic">{item.valencia}</Text>
+                    <Text style={styles.tableItemNote}>{item.valencia}</Text>
                   )}
                 </View>
               )}
@@ -657,9 +932,9 @@ export default function StatsScreen() {
 
             <TouchableOpacity
               onPress={() => setShowTabela(false)}
-              className="m-4 bg-primary rounded-lg py-3 items-center"
+              style={[styles.actionButton, { margin: 16 }]}
             >
-              <Text className="text-background font-semibold">Fechar</Text>
+              <Text style={styles.actionButtonText}>Fechar</Text>
             </TouchableOpacity>
           </View>
         </View>

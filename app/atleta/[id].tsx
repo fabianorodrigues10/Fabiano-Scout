@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
@@ -335,11 +336,164 @@ export default function AtletaFormScreen() {
     }
     setDataNascimento(formatted);
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 12,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    backButton: {
+      marginRight: 12,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: colors.foreground,
+    },
+    scrollContent: {
+      padding: 16,
+    },
+    formGroup: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: colors.foreground,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      color: colors.foreground,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    ogolButton: {
+      marginTop: 8,
+      borderRadius: 8,
+      paddingVertical: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#FF6B00",
+    },
+    ogolButtonText: {
+      color: "white",
+      fontWeight: "600",
+      marginLeft: 8,
+    },
+    ogolButtonHint: {
+      fontSize: 12,
+      color: colors.muted,
+      marginTop: 4,
+      textAlign: "center",
+    },
+    separator: {
+      marginBottom: 16,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    separatorLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    separatorText: {
+      fontSize: 12,
+      color: colors.muted,
+      marginHorizontal: 12,
+    },
+    positionRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    positionButton: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+    },
+    positionButtonText: {
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    rowContainer: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 16,
+    },
+    rowItem: {
+      flex: 1,
+    },
+    rowItemSmall: {
+      width: 96,
+    },
+    peRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    peButton: {
+      flex: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      alignItems: "center",
+    },
+    peButtonText: {
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    valenciaInput: {
+      minHeight: 100,
+      textAlignVertical: "top",
+    },
+    charCount: {
+      fontSize: 12,
+      color: colors.muted,
+      textAlign: "right",
+      marginTop: 4,
+    },
+    saveButton: {
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    saveButtonText: {
+      color: "white",
+      fontWeight: "bold",
+      fontSize: 16,
+    },
+    spacer: {
+      height: 32,
+    },
+  });
   
   if (loadingAtleta) {
     return (
-      <ScreenContainer className="justify-center items-center">
-        <ActivityIndicator size="large" color={colors.primary} />
+      <ScreenContainer>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </ScreenContainer>
     );
   }
@@ -349,7 +503,7 @@ export default function AtletaFormScreen() {
   
   return (
     <ScreenContainer>
-      <View className="flex-1">
+      <View style={styles.container}>
         {/* WebView oculta para scraping do Ogol */}
         <OgolWebScraper
           url={ogolScrapeUrl}
@@ -359,12 +513,12 @@ export default function AtletaFormScreen() {
         />
 
         {/* Header */}
-        <View className="px-4 pt-4 pb-3 bg-background border-b border-border flex-row justify-between items-center">
-          <View className="flex-row items-center flex-1">
-            <TouchableOpacity onPress={() => router.back()} className="mr-3">
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <IconSymbol name="chevron.right" size={24} color={colors.foreground} style={{ transform: [{ rotate: "180deg" }] }} />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-foreground">
+            <Text style={styles.headerTitle}>
               {isEdit ? "Editar Atleta" : "Novo Atleta"}
             </Text>
           </View>
@@ -377,110 +531,95 @@ export default function AtletaFormScreen() {
         </View>
         
         {/* Formulário */}
-        <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
 
           {/* Link do Ogol - Movido para o topo para facilitar o fluxo */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Link do Ogol
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Link do Ogol</Text>
             <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              style={styles.input}
               placeholder="Cole o link do ogol.com.br do atleta"
               placeholderTextColor={colors.muted}
               value={link}
               onChangeText={setLink}
               keyboardType="url"
               autoCapitalize="none"
-              style={{ color: colors.foreground }}
             />
             
             {/* Botão Preencher do Ogol - aparece quando link contém ogol.com */}
             {showOgolButton && (
-              <TouchableOpacity
-                onPress={handlePreencherOgol}
-                disabled={ogolLoading}
-                className="mt-2 rounded-lg py-3 flex-row items-center justify-center"
-                style={{
-                  backgroundColor: "#FF6B00",
-                  opacity: ogolLoading ? 0.6 : 1,
-                }}
-              >
-                {ogolLoading ? (
-                  <>
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                    <Text className="text-white font-semibold ml-2">
-                      Buscando dados...
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <IconSymbol name="bolt.fill" size={18} color="#FFFFFF" />
-                    <Text className="text-white font-semibold ml-2">
-                      Preencher do Ogol
-                    </Text>
-                  </>
+              <>
+                <TouchableOpacity
+                  onPress={handlePreencherOgol}
+                  disabled={ogolLoading}
+                  style={[styles.ogolButton, { opacity: ogolLoading ? 0.6 : 1 }]}
+                >
+                  {ogolLoading ? (
+                    <>
+                      <ActivityIndicator color="white" size="small" />
+                      <Text style={styles.ogolButtonText}>Buscando dados...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <IconSymbol name="bolt.fill" size={18} color="white" />
+                      <Text style={styles.ogolButtonText}>Preencher do Ogol</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {Platform.OS !== "web" && (
+                  <Text style={styles.ogolButtonHint}>
+                    Abre a página do Ogol em segundo plano e extrai os dados automaticamente
+                  </Text>
                 )}
-              </TouchableOpacity>
+              </>
             )}
 
-            {showOgolButton && Platform.OS !== "web" && (
-              <Text className="text-xs text-muted mt-1 text-center">
-                Abre a página do Ogol em segundo plano e extrai os dados automaticamente
-              </Text>
+            {showOgolButton && (
+              <View style={styles.separator}>
+                <View style={styles.separatorLine} />
+                <Text style={styles.separatorText}>Dados do Atleta</Text>
+                <View style={styles.separatorLine} />
+              </View>
             )}
           </View>
 
-          {/* Separador visual */}
-          {showOgolButton && (
-            <View className="mb-4 flex-row items-center">
-              <View className="flex-1 h-px bg-border" />
-              <Text className="mx-3 text-xs text-muted">Dados do Atleta</Text>
-              <View className="flex-1 h-px bg-border" />
-            </View>
-          )}
-
           {/* Nome */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Nome do Atleta *
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Nome do Atleta *</Text>
             <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              style={styles.input}
               placeholder="Ex: Neymar Jr"
               placeholderTextColor={colors.muted}
               value={nome}
               onChangeText={setNome}
-              style={{ color: colors.foreground }}
             />
           </View>
           
           {/* Posição */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Posição Principal
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Posição Principal</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-2">
+              <View style={styles.positionRow}>
                 {POSICOES.map((pos) => (
                   <TouchableOpacity
                     key={pos}
                     onPress={() => setPosicao(posicao === pos ? "" : pos)}
-                    style={{
-                      backgroundColor: posicao === pos ? colors.primary : colors.surface,
-                      borderWidth: posicao === pos ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                    }}
+                    style={[
+                      styles.positionButton,
+                      {
+                        backgroundColor: posicao === pos ? colors.primary : colors.surface,
+                        borderColor: posicao === pos ? colors.primary : colors.border,
+                      }
+                    ]}
                   >
                     <Text
-                      style={{
-                        color: posicao === pos ? "white" : colors.foreground,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
+                      style={[
+                        styles.positionButtonText,
+                        {
+                          color: posicao === pos ? "white" : colors.foreground,
+                        }
+                      ]}
                     >
                       {pos}
                     </Text>
@@ -491,31 +630,29 @@ export default function AtletaFormScreen() {
           </View>
 
           {/* Segunda Posição */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Segunda Posição (opcional)
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Segunda Posição (opcional)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-2">
+              <View style={styles.positionRow}>
                 {POSICOES.map((pos) => (
                   <TouchableOpacity
                     key={pos}
                     onPress={() => setSegundaPosicao(segundaPosicao === pos ? "" : pos)}
-                    style={{
-                      backgroundColor: segundaPosicao === pos ? colors.primary : colors.surface,
-                      borderWidth: segundaPosicao === pos ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                    }}
+                    style={[
+                      styles.positionButton,
+                      {
+                        backgroundColor: segundaPosicao === pos ? colors.primary : colors.surface,
+                        borderColor: segundaPosicao === pos ? colors.primary : colors.border,
+                      }
+                    ]}
                   >
                     <Text
-                      style={{
-                        color: segundaPosicao === pos ? "white" : colors.foreground,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
+                      style={[
+                        styles.positionButtonText,
+                        {
+                          color: segundaPosicao === pos ? "white" : colors.foreground,
+                        }
+                      ]}
                     >
                       {pos}
                     </Text>
@@ -526,94 +663,78 @@ export default function AtletaFormScreen() {
           </View>
           
           {/* Clube */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Clube Atual
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Clube Atual</Text>
             <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              style={styles.input}
               placeholder="Ex: Flamengo/RJ"
               placeholderTextColor={colors.muted}
               value={clube}
               onChangeText={setClube}
-              style={{ color: colors.foreground }}
             />
           </View>
           
           {/* Data de Nascimento e Idade */}
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-foreground mb-2">
-                Data Nasc. (dd/mm/aa)
-              </Text>
+          <View style={styles.rowContainer}>
+            <View style={styles.rowItem}>
+              <Text style={styles.label}>Data Nasc. (dd/mm/aa)</Text>
               <TextInput
-                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                style={styles.input}
                 placeholder="01/03/97"
                 placeholderTextColor={colors.muted}
                 value={dataNascimento}
                 onChangeText={handleDataChange}
                 keyboardType="numeric"
                 maxLength={8}
-                style={{ color: colors.foreground }}
               />
             </View>
-            <View className="w-24">
-              <Text className="text-sm font-medium text-foreground mb-2">
-                Idade
-              </Text>
+            <View style={styles.rowItemSmall}>
+              <Text style={styles.label}>Idade</Text>
               <TextInput
-                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                style={styles.input}
                 placeholder="Auto"
                 placeholderTextColor={colors.muted}
                 value={idade}
                 onChangeText={setIdade}
                 keyboardType="numeric"
-                style={{ color: colors.foreground, backgroundColor: idade ? colors.surface : colors.surface }}
               />
             </View>
           </View>
           
           {/* Altura e Pé */}
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-foreground mb-2">
-                Altura
-              </Text>
+          <View style={styles.rowContainer}>
+            <View style={styles.rowItem}>
+              <Text style={styles.label}>Altura</Text>
               <TextInput
-                className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                style={styles.input}
                 placeholder="Ex: 1.76"
                 placeholderTextColor={colors.muted}
                 value={altura}
                 onChangeText={setAltura}
-                style={{ color: colors.foreground }}
               />
             </View>
-            <View className="flex-1">
-              <Text className="text-sm font-medium text-foreground mb-2">
-                Pé Preferencial
-              </Text>
-              <View className="flex-row gap-2">
+            <View style={styles.rowItem}>
+              <Text style={styles.label}>Pé Preferencial</Text>
+              <View style={styles.peRow}>
                 {PES.map((p) => (
                   <TouchableOpacity
                     key={p}
                     onPress={() => setPe(pe === p ? "" : p)}
-                    style={{
-                      backgroundColor: pe === p ? colors.primary : colors.surface,
-                      borderWidth: pe === p ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 10,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      flex: 1,
-                      alignItems: "center",
-                    }}
+                    style={[
+                      styles.peButton,
+                      {
+                        backgroundColor: pe === p ? colors.primary : colors.surface,
+                        borderColor: pe === p ? colors.primary : colors.border,
+                      }
+                    ]}
                   >
                     <Text
-                      style={{
-                        color: pe === p ? "white" : colors.foreground,
-                        fontSize: 11,
-                        fontWeight: "600",
-                      }}
+                      style={[
+                        styles.peButtonText,
+                        {
+                          color: pe === p ? "white" : colors.foreground,
+                        }
+                      ]}
                       numberOfLines={1}
                     >
                       {p === "direito" ? "Dir" : p === "esquerdo" ? "Esq" : "Amb"}
@@ -625,27 +746,22 @@ export default function AtletaFormScreen() {
           </View>
           
           {/* Escala */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Escala
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Escala</Text>
             <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              style={styles.input}
               placeholder="Ex: A, B, C..."
               placeholderTextColor={colors.muted}
               value={escala}
               onChangeText={setEscala}
-              style={{ color: colors.foreground }}
             />
           </View>
 
           {/* Valências */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-foreground mb-2">
-              Valências
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Valências</Text>
             <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              style={[styles.input, styles.valenciaInput]}
               placeholder="Descreva as características e valências do atleta (até 500 caracteres)..."
               placeholderTextColor={colors.muted}
               value={valencia}
@@ -653,9 +769,8 @@ export default function AtletaFormScreen() {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
-              style={{ color: colors.foreground, minHeight: 100 }}
             />
-            <Text className="text-xs text-muted text-right mt-1">
+            <Text style={styles.charCount}>
               {valencia.length}/500
             </Text>
           </View>
@@ -664,22 +779,19 @@ export default function AtletaFormScreen() {
           <TouchableOpacity
             onPress={handleSalvar}
             disabled={isLoading}
-            className="rounded-xl py-4 items-center mb-4"
-            style={{
-              backgroundColor: isLoading ? colors.muted : colors.primary,
-            }}
+            style={[styles.saveButton, { backgroundColor: isLoading ? colors.muted : colors.primary }]}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-bold text-base">
+              <Text style={styles.saveButtonText}>
                 {isEdit ? "Salvar Alterações" : "Cadastrar Atleta"}
               </Text>
             )}
           </TouchableOpacity>
 
           {/* Espaço extra no final */}
-          <View className="h-8" />
+          <View style={styles.spacer} />
         </ScrollView>
       </View>
     </ScreenContainer>
