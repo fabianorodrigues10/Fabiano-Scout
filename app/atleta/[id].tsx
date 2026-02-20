@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -66,6 +66,12 @@ export default function AtletaFormScreen() {
   const createMutation = trpc.atletas.create.useMutation();
   const updateMutation = trpc.atletas.update.useMutation();
   const deleteMutation = trpc.atletas.delete.useMutation();
+
+  // Query para listar todos os atletas (para validar duplicatas)
+  const { data: todosAtletas = [] } = trpc.atletas.list.useQuery(
+    undefined,
+    { enabled: Boolean(isAuthenticated && !isEdit) }
+  );
   
   // Carrega dados do atleta ao editar
   useEffect(() => {
@@ -253,6 +259,94 @@ export default function AtletaFormScreen() {
       return;
     }
     
+    // Validar duplicata completa (apenas ao criar novo atleta)
+    if (!isEdit && todosAtletas && todosAtletas.length > 0) {
+      // Preparar dados do novo atleta para comparação
+      let dataNascimentoISO: string | undefined = undefined;
+      if (dataNascimento && dataNascimento.length === 8) {
+        const parts = dataNascimento.split("/");
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]);
+          let year = parseInt(parts[2]);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            year = year > 50 ? 1900 + year : 2000 + year;
+            dataNascimentoISO = new Date(year, month - 1, day).toISOString();
+          }
+        }
+      }
+
+      let alturaNum: number | undefined = undefined;
+      if (altura && altura.trim()) {
+        const parsed = Number(altura);
+        if (!isNaN(parsed) && parsed > 0) {
+          alturaNum = parsed;
+        }
+      }
+      
+      let idadeNum: number | undefined = undefined;
+      if (idade && idade.trim()) {
+        const parsed = Number(idade);
+        if (!isNaN(parsed) && parsed > 0) {
+          idadeNum = parsed;
+        }
+      }
+      
+      const novoAtleta = {
+        nome: nome.toLowerCase().trim(),
+        posicao: (posicao || "").toLowerCase().trim(),
+        segundaPosicao: (segundaPosicao || "").toLowerCase().trim(),
+        clube: (clube || "").toLowerCase().trim(),
+        dataNascimento: dataNascimentoISO,
+        idade: idadeNum,
+        altura: alturaNum,
+        pe: (pe || "").toLowerCase().trim(),
+        link: (link || "").toLowerCase().trim(),
+        escala: (escala || "").toLowerCase().trim(),
+        valencia: (valencia || "").toLowerCase().trim(),
+      };
+      
+      // Procurar por atleta com TODOS os dados idênticos
+      const atletaDuplicado = todosAtletas.find((a: any) => {
+        return (
+          a.nome.toLowerCase().trim() === novoAtleta.nome &&
+          (a.posicao || "").toLowerCase().trim() === novoAtleta.posicao &&
+          (a.segundaPosicao || "").toLowerCase().trim() === novoAtleta.segundaPosicao &&
+          (a.clube || "").toLowerCase().trim() === novoAtleta.clube &&
+          a.dataNascimento === novoAtleta.dataNascimento &&
+          a.idade === novoAtleta.idade &&
+          a.altura === novoAtleta.altura &&
+          (a.pe || "").toLowerCase().trim() === novoAtleta.pe &&
+          (a.link || "").toLowerCase().trim() === novoAtleta.link &&
+          (a.escala || "").toLowerCase().trim() === novoAtleta.escala &&
+          (a.valencia || "").toLowerCase().trim() === novoAtleta.valencia
+        );
+      });
+      
+      if (atletaDuplicado) {
+        Alert.alert(
+          "⚠️ Atleta Duplicado",
+          `Um atleta com exatamente os mesmos dados já está cadastrado no sistema.\n\nDeseja continuar mesmo assim?`,
+          [
+            { text: "Não", style: "cancel" },
+            {
+              text: "Sim, cadastrar mesmo assim",
+              onPress: () => {
+                // Continuar com o cadastro
+                executarCadastro();
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+    
+    executarCadastro();
+  };
+  
+  const executarCadastro = async () => {
+    
     try {
       let dataNascimentoISO: string | undefined = undefined;
       if (dataNascimento && dataNascimento.length === 8) {
@@ -268,14 +362,30 @@ export default function AtletaFormScreen() {
         }
       }
 
+      let alturaNum: number | undefined = undefined;
+      if (altura && altura.trim()) {
+        const parsed = Number(altura);
+        if (!isNaN(parsed) && parsed > 0) {
+          alturaNum = parsed;
+        }
+      }
+      
+      let idadeNum: number | undefined = undefined;
+      if (idade && idade.trim()) {
+        const parsed = Number(idade);
+        if (!isNaN(parsed) && parsed > 0) {
+          idadeNum = parsed;
+        }
+      }
+      
       const data = {
         nome: nome.trim(),
         posicao: posicao || undefined,
         segundaPosicao: segundaPosicao || undefined,
         clube: clube || undefined,
         dataNascimento: dataNascimentoISO,
-        idade: idade ? Number(idade) : undefined,
-        altura: altura ? Number(altura) : undefined,
+        idade: idadeNum,
+        altura: alturaNum,
         pe: pe as any || undefined,
         link: link || undefined,
         escala: escala || undefined,
@@ -301,19 +411,22 @@ export default function AtletaFormScreen() {
   
   const handleExcluir = () => {
     Alert.alert(
-      "Confirmar Exclusão",
-      "Tem certeza que deseja excluir este atleta?",
+      "Tem certeza que deseja excluir?",
+      `Você está prestes a excluir ${nome}. Esta ação não pode ser desfeita.`,
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: "Não", style: "cancel" },
         {
-          text: "Excluir",
+          text: "Sim",
           style: "destructive",
           onPress: async () => {
             try {
+              console.log("[Delete] Iniciando exclusão do atleta ID:", id);
               await deleteMutation.mutateAsync({ id: Number(id) });
+              console.log("[Delete] Sucesso");
               Alert.alert("Sucesso", "Atleta excluído com sucesso");
               router.back();
             } catch (error: any) {
+              console.error("[Delete] Erro:", error);
               Alert.alert("Erro", error.message || "Erro ao excluir atleta");
             }
           },
