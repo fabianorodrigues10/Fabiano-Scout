@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, TextInput, Modal, ScrollView } from "react-native";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 
 interface Grupo {
   id: number;
@@ -109,201 +110,54 @@ export default function GruposScreen() {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    header: {
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomColor: colors.border,
-      borderBottomWidth: 1,
-    },
-    headerTitle: {
-      fontSize: 24,
-      fontWeight: "bold",
-      color: colors.foreground,
-    },
-    content: {
-      flex: 1,
-      padding: 16,
-    },
-    emptyContainer: {
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 40,
-    },
-    emptyText: {
-      color: colors.muted,
-      fontSize: 14,
-    },
-    grupoCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 12,
-      borderLeftWidth: 4,
-    },
-    grupoCardRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    grupoCardContent: {
-      flex: 1,
-    },
-    grupoCardTitle: {
-      fontSize: 16,
-      fontWeight: "600",
-      color: colors.foreground,
-    },
-    grupoCardDescription: {
-      fontSize: 12,
-      color: colors.muted,
-      marginTop: 4,
-    },
-    grupoCardCount: {
-      fontSize: 12,
-      color: colors.muted,
-      marginTop: 4,
-    },
-    deleteButton: {
-      padding: 8,
-    },
-    deleteButtonText: {
-      color: colors.error,
-      fontSize: 18,
-    },
-    fab: {
-      position: "absolute",
-      bottom: 24,
-      right: 24,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.primary,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
-    },
-    fabText: {
-      fontSize: 28,
-      color: "white",
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "flex-end",
-    },
-    modalContent: {
-      backgroundColor: colors.background,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 20,
-      paddingBottom: 40,
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: colors.foreground,
-      marginBottom: 16,
-    },
-    fieldLabel: {
-      color: colors.foreground,
-      fontSize: 12,
-      fontWeight: "600",
-      marginBottom: 4,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 16,
-      color: colors.foreground,
-    },
-    inputMultiline: {
-      height: 80,
-    },
-    colorContainer: {
-      flexDirection: "row",
-      gap: 8,
-      marginBottom: 16,
-    },
-    colorButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 8,
-    },
-    buttonRow: {
-      flexDirection: "row",
-      gap: 12,
-    },
-    cancelButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: "center",
-    },
-    cancelButtonText: {
-      color: colors.foreground,
-      fontWeight: "600",
-    },
-    createButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: 8,
-      backgroundColor: colors.primary,
-      alignItems: "center",
-    },
-    createButtonText: {
-      color: "white",
-      fontWeight: "600",
-    },
-  });
-
   const renderGrupo = ({ item }: { item: Grupo }) => (
     <TouchableOpacity
       onPress={() => handleSelectGrupo(item)}
-      style={[styles.grupoCard, { borderLeftColor: item.cor }]}
+      style={{
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        borderLeftWidth: 4,
+        borderLeftColor: item.cor,
+      }}
     >
-      <View style={styles.grupoCardRow}>
-        <View style={styles.grupoCardContent}>
-          <Text style={styles.grupoCardTitle}>{item.nome}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
+            {item.nome}
+          </Text>
           {item.descricao && (
-            <Text style={styles.grupoCardDescription}>{item.descricao}</Text>
+            <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
+              {item.descricao}
+            </Text>
           )}
-          <Text style={styles.grupoCardCount}>{atletasGrupo.length} atletas</Text>
+          <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
+            {atletasGrupo.length} atletas
+          </Text>
         </View>
         <TouchableOpacity
           onPress={() => handleDeleteGrupo(item.id)}
-          style={styles.deleteButton}
+          style={{ padding: 8 }}
         >
-          <Text style={styles.deleteButtonText}>✕</Text>
+          <Text style={{ color: colors.error, fontSize: 18 }}>✕</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Grupos</Text>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: 1 }}>
+        <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.foreground }}>Grupos</Text>
       </View>
 
       {/* Conteúdo */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={{ flex: 1, padding: 16 }}>
         {grupos.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhum grupo criado ainda</Text>
+          <View style={{ alignItems: "center", justifyContent: "center", marginTop: 40 }}>
+            <Text style={{ color: colors.muted, fontSize: 14 }}>Nenhum grupo criado ainda</Text>
           </View>
         ) : (
           <FlatList
@@ -322,9 +176,24 @@ export default function GruposScreen() {
           setNovoGrupo({ nome: "", descricao: "", cor: "#FF6B35" });
           setModalVisible(true);
         }}
-        style={styles.fab}
+        style={{
+          position: "absolute",
+          bottom: 24,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: colors.primary,
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 5,
+        }}
       >
-        <Text style={styles.fabText}>+</Text>
+        <Text style={{ fontSize: 28, color: "white" }}>+</Text>
       </TouchableOpacity>
 
       {/* Modal para criar/editar grupo */}
@@ -334,16 +203,33 @@ export default function GruposScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+              paddingBottom: 40,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.foreground, marginBottom: 16 }}>
               {editingGrupo ? "Editar Grupo" : "Novo Grupo"}
             </Text>
 
             {/* Campo Nome */}
-            <Text style={styles.fieldLabel}>Nome do Grupo</Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "600", marginBottom: 4 }}>
+              Nome do Grupo
+            </Text>
             <TextInput
-              style={styles.input}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 16,
+                color: colors.foreground,
+              }}
               placeholder="Ex: Titulares, Reservas, Monitorados"
               placeholderTextColor={colors.muted}
               value={novoGrupo.nome}
@@ -351,9 +237,19 @@ export default function GruposScreen() {
             />
 
             {/* Campo Descrição */}
-            <Text style={styles.fieldLabel}>Descrição (opcional)</Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "600", marginBottom: 4 }}>
+              Descrição (opcional)
+            </Text>
             <TextInput
-              style={[styles.input, styles.inputMultiline]}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 16,
+                color: colors.foreground,
+                height: 80,
+              }}
               placeholder="Descrição do grupo"
               placeholderTextColor={colors.muted}
               value={novoGrupo.descricao}
@@ -362,37 +258,52 @@ export default function GruposScreen() {
             />
 
             {/* Seletor de Cor */}
-            <Text style={styles.fieldLabel}>Cor</Text>
-            <View style={styles.colorContainer}>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "600", marginBottom: 8 }}>
+              Cor
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
               {["#FF6B35", "#FF1744", "#00BCD4", "#4CAF50", "#9C27B0", "#FFC107"].map((cor) => (
                 <TouchableOpacity
                   key={cor}
                   onPress={() => setNovoGrupo({ ...novoGrupo, cor })}
-                  style={[
-                    styles.colorButton,
-                    {
-                      backgroundColor: cor,
-                      borderWidth: novoGrupo.cor === cor ? 3 : 0,
-                      borderColor: colors.foreground,
-                    }
-                  ]}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    backgroundColor: cor,
+                    borderWidth: novoGrupo.cor === cor ? 3 : 0,
+                    borderColor: colors.foreground,
+                  }}
                 />
               ))}
             </View>
 
             {/* Botões */}
-            <View style={styles.buttonRow}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
-                style={styles.cancelButton}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: "center",
+                }}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text style={{ color: colors.foreground, fontWeight: "600" }}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleCreateGrupo}
-                style={styles.createButton}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                }}
               >
-                <Text style={styles.createButtonText}>
+                <Text style={{ color: "white", fontWeight: "600" }}>
                   {editingGrupo ? "Atualizar" : "Criar"}
                 </Text>
               </TouchableOpacity>
