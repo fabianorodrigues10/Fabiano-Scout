@@ -52,6 +52,7 @@ export default function AtletaFormScreen() {
   const [escala, setEscala] = useState("");
   const [valencia, setValencia] = useState("");
   const [ogolLoading, setOgolLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Estado para WebView scraper
   const [ogolScrapeUrl, setOgolScrapeUrl] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export default function AtletaFormScreen() {
   // Query para listar todos os atletas (para validar duplicatas)
   const { data: todosAtletas = [] } = trpc.atletas.list.useQuery(
     undefined,
-    { enabled: Boolean(isAuthenticated && !isEdit) }
+    { enabled: Boolean(isAuthenticated) }
   );
   
   // Carrega dados do atleta ao editar
@@ -410,29 +411,26 @@ export default function AtletaFormScreen() {
   };
   
   const handleExcluir = () => {
-    Alert.alert(
-      "Tem certeza que deseja excluir?",
-      `Você está prestes a excluir ${nome}. Esta ação não pode ser desfeita.`,
-      [
-        { text: "Não", style: "cancel" },
-        {
-          text: "Sim",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              console.log("[Delete] Iniciando exclusão do atleta ID:", id);
-              await deleteMutation.mutateAsync({ id: Number(id) });
-              console.log("[Delete] Sucesso");
-              Alert.alert("Sucesso", "Atleta excluído com sucesso");
-              router.back();
-            } catch (error: any) {
-              console.error("[Delete] Erro:", error);
-              Alert.alert("Erro", error.message || "Erro ao excluir atleta");
-            }
-          },
-        },
-      ]
-    );
+    setShowDeleteModal(true);
+  };
+  
+  const confirmarExclusao = async () => {
+    try {
+      console.log("[Delete] Iniciando exclusão do atleta ID:", id);
+      await deleteMutation.mutateAsync({ id: Number(id) });
+      console.log("[Delete] Sucesso");
+      setShowDeleteModal(false);
+      Alert.alert("Sucesso", "Atleta excluído com sucesso");
+      router.back();
+    } catch (error: any) {
+      console.error("[Delete] Erro:", error);
+      Alert.alert("Erro", error.message || "Erro ao excluir atleta");
+      setShowDeleteModal(false);
+    }
+  };
+  
+  const cancelarExclusao = () => {
+    setShowDeleteModal(false);
   };
 
   // Máscara para data dd/mm/aa
@@ -795,6 +793,43 @@ export default function AtletaFormScreen() {
           <View className="h-8" />
         </ScrollView>
       </View>
+      
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteModal && (
+        <View className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <View className="bg-background rounded-2xl p-6 w-4/5 max-w-sm">
+            <Text className="text-xl font-bold text-foreground mb-2">
+              ⚠️ Tem certeza que deseja excluir?
+            </Text>
+            <Text className="text-base text-muted mb-6">
+              Você está prestes a excluir {nome}. Esta ação não pode ser desfeita.
+            </Text>
+            
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={cancelarExclusao}
+                disabled={isLoading}
+                className="flex-1 py-3 rounded-lg border border-border items-center"
+              >
+                <Text className="font-semibold text-foreground">Não</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={confirmarExclusao}
+                disabled={isLoading}
+                className="flex-1 py-3 rounded-lg items-center"
+                style={{ backgroundColor: isLoading ? colors.muted : colors.error }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text className="font-semibold text-white">Sim</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </ScreenContainer>
   );
 }
