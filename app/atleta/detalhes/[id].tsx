@@ -182,6 +182,9 @@ export default function AtletaDetalhesScreen() {
             {atleta.clube && (
               <InfoCard icon="building.2.fill" label="Clube" value={atleta.clube} />
             )}
+            {atleta.naturalidade && (
+              <InfoCard icon="map.pin.circle.fill" label="Naturalidade" value={atleta.naturalidade} />
+            )}
           </View>
 
           {/* Card: Dados Físicos */}
