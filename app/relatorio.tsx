@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
 
+// Faixas de idade padrão
 const FAIXAS_IDADE = [
   { label: "Sub-17", min: 0, max: 16 },
   { label: "Sub-20", min: 17, max: 19 },
@@ -25,41 +26,43 @@ const FAIXAS_IDADE = [
   { label: "26+", min: 26, max: 100 },
 ];
 
-export default function FiltrosScreen() {
+export default function RelatorioScreen() {
   const router = useRouter();
   const colors = useColors();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [generatingExcel, setGeneratingExcel] = useState(false);
-
-  // Filtros
-  const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
-  const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
-  const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
-  
-  // Seleção de atletas
-  const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
 
   // Query de atletas
   const { data: atletas = [], isLoading, refetch } = trpc.atletas.list.useQuery();
 
-  // Extrair posições e clubes únicos
+  // Estados de filtro
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
+  const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
+  const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
+  const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingExcel, setGeneratingExcel] = useState(false);
+
+  // Obter posições e clubes únicos
   const posicoes = useMemo(() => {
     const set = new Set<string>();
-    atletas.forEach((a) => { if (a.posicao) set.add(a.posicao); });
+    atletas.forEach((a: any) => {
+      if (a.posicao) set.add(a.posicao);
+    });
     return Array.from(set).sort();
   }, [atletas]);
 
   const clubes = useMemo(() => {
     const set = new Set<string>();
-    atletas.forEach((a) => { if (a.clube) set.add(a.clube); });
+    atletas.forEach((a: any) => {
+      if (a.clube) set.add(a.clube);
+    });
     return Array.from(set).sort();
   }, [atletas]);
 
   // Filtrar atletas
   const filteredAtletas = useMemo(() => {
-    return atletas.filter((atleta) => {
+    return atletas.filter((atleta: any) => {
       if (searchQuery && !atleta.nome.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
@@ -75,11 +78,19 @@ export default function FiltrosScreen() {
           const faixa = FAIXAS_IDADE[faixaIdx];
           return idade >= faixa.min && idade <= faixa.max;
         });
-        if (!matchesFaixa) return false;
+        if (!matchesFaixa) {
+          return false;
+        }
       }
       return true;
     });
   }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const toggleAtletaSelection = (id: number) => {
     setSelectedAtletasIds((prev) =>
@@ -107,6 +118,7 @@ export default function FiltrosScreen() {
         posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
         faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
         clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
+        busca: searchQuery || undefined,
       };
       await generateReport(selectedAtletasIds, filters);
       Alert.alert("Sucesso", "Relatório gerado com sucesso!");
@@ -129,6 +141,7 @@ export default function FiltrosScreen() {
         posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
         faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
         clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
+        busca: searchQuery || undefined,
       };
       await generateExcel(selectedAtletasIds, filters);
       Alert.alert("Sucesso", "Planilha exportada com sucesso!");
@@ -137,12 +150,6 @@ export default function FiltrosScreen() {
     } finally {
       setGeneratingExcel(false);
     }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
   };
 
   return (

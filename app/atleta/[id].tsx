@@ -43,6 +43,8 @@ export default function AtletaFormScreen() {
   const [nome, setNome] = useState("");
   const [posicao, setPosicao] = useState("");
   const [segundaPosicao, setSegundaPosicao] = useState("");
+  const [clubeNome, setClubeNome] = useState("");
+  const [clubeEstado, setClubeEstado] = useState("");
   const [clube, setClube] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [idade, setIdade] = useState("");
@@ -81,6 +83,14 @@ export default function AtletaFormScreen() {
       setPosicao(atleta.posicao || "");
       setSegundaPosicao(atleta.segundaPosicao || "");
       setClube(atleta.clube || "");
+      // Parse clube em nome e estado
+      if (atleta.clube) {
+        const parts = atleta.clube.split("/");
+        if (parts.length === 2) {
+          setClubeNome(parts[0]);
+          setClubeEstado(parts[1]);
+        }
+      }
       if (atleta.dataNascimento) {
         const d = new Date(atleta.dataNascimento);
         const dd = String(d.getDate()).padStart(2, '0');
@@ -161,6 +171,14 @@ export default function AtletaFormScreen() {
     }
     if (data.clube && !clube.trim()) {
       setClube(data.clube);
+      // Separar clube em nome e estado
+      const parts = data.clube.split("/");
+      if (parts.length === 2) {
+        setClubeNome(parts[0]);
+        setClubeEstado(parts[1]);
+      } else {
+        setClubeNome(data.clube);
+      }
       preenchidos++;
     }
 
@@ -258,6 +276,22 @@ export default function AtletaFormScreen() {
     if (!nome.trim()) {
       Alert.alert("Erro", "O nome do atleta é obrigatório");
       return;
+    }
+    
+    // Validar formato de clube (NOME/XX ou XX-XXX)
+    let clubeFormatado = clube;
+    if (clubeNome.trim() || clubeEstado.trim()) {
+      if (!clubeNome.trim() || !clubeEstado.trim()) {
+        Alert.alert("Erro", "Se preencheu o clube, preencha tanto o nome quanto o estado/país");
+        return;
+      }
+      // Validar estado/país (2-3 letras maiúsculas)
+      if (!/^[A-Z]{2,3}$/.test(clubeEstado.trim())) {
+        Alert.alert("Formato inválido", "O estado/país deve ter 2 ou 3 letras maiúsculas (ex: CE, SP, USA)");
+        return;
+      }
+      clubeFormatado = `${clubeNome.trim()}/${clubeEstado.trim()}`;
+      setClube(clubeFormatado);
     }
     
     // Validar duplicata completa (apenas ao criar novo atleta)
@@ -641,14 +675,26 @@ export default function AtletaFormScreen() {
             <Text className="text-sm font-medium text-foreground mb-2">
               Clube Atual
             </Text>
-            <TextInput
-              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
-              placeholder="Ex: Flamengo/RJ"
-              placeholderTextColor={colors.muted}
-              value={clube}
-              onChangeText={setClube}
-              style={{ color: colors.foreground }}
-            />
+            <View className="flex-row gap-3">
+              <TextInput
+                className="flex-1 bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="Nome do clube"
+                placeholderTextColor={colors.muted}
+                value={clubeNome}
+                onChangeText={setClubeNome}
+                style={{ color: colors.foreground }}
+              />
+              <TextInput
+                className="w-20 bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                placeholder="UF/País"
+                placeholderTextColor={colors.muted}
+                value={clubeEstado}
+                onChangeText={(text) => setClubeEstado(text.toUpperCase())}
+                maxLength={3}
+                style={{ color: colors.foreground }}
+              />
+            </View>
+            {clube && <Text className="text-xs text-muted mt-2">Formato: {clube}</Text>}
           </View>
           
           {/* Data de Nascimento e Idade */}

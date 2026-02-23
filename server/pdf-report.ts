@@ -273,7 +273,8 @@ export function registerPdfRoutes(app: any) {
       if (ids && ids.length > 0) {
         data = await db.select().from(atletas).where(inArray(atletas.id, ids));
       } else {
-        data = await db.select().from(atletas).where(eq(atletas.userId, 1));
+        // Se nenhum ID foi fornecido, retornar vazio
+        data = [];
       }
 
       // Criar PDF

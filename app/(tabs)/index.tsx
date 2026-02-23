@@ -34,10 +34,13 @@ export default function HomeScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filtros
-  const [selectedPosicao, setSelectedPosicao] = useState<string | null>(null);
-  const [selectedClube, setSelectedClube] = useState<string | null>(null);
-  const [selectedIdadeFaixa, setSelectedIdadeFaixa] = useState(0); // index em FAIXAS_IDADE
+  // Filtros (multi-seleção)
+  const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
+  const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
+  const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
+  
+  // Seleção de atletas para relatório
+  const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
 
   const { data: atletas = [], isLoading, refetch } = trpc.atletas.list.useQuery();
 
@@ -54,39 +57,59 @@ export default function HomeScreen() {
     return Array.from(set).sort();
   }, [atletas]);
 
-  // Filtragem combinada
+  // Filtragem combinada (multi-seleção)
   const filteredAtletas = useMemo(() => {
-    const faixa = FAIXAS_IDADE[selectedIdadeFaixa];
     return atletas.filter((atleta) => {
       // Busca por nome
       if (searchQuery && !atleta.nome.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
-      // Filtro por posição
-      if (selectedPosicao && atleta.posicao !== selectedPosicao) {
+      // Filtro por posição (múltiplas)
+      if (selectedPosicoes.length > 0 && !selectedPosicoes.includes(atleta.posicao || "")) {
         return false;
       }
-      // Filtro por clube
-      if (selectedClube && atleta.clube !== selectedClube) {
+      // Filtro por clube (múltiplos)
+      if (selectedClubes.length > 0 && !selectedClubes.includes(atleta.clube || "")) {
         return false;
       }
-      // Filtro por faixa de idade
-      if (faixa && faixa.min > 0) {
+      // Filtro por faixa de idade (múltiplas)
+      if (selectedIdadeFaixas.length > 0) {
         const idade = atleta.idade ?? 0;
-        if (idade < faixa.min || idade > faixa.max) {
+        const matchesFaixa = selectedIdadeFaixas.some((faixaIdx) => {
+          const faixa = FAIXAS_IDADE[faixaIdx];
+          return idade >= faixa.min && idade <= faixa.max;
+        });
+        if (!matchesFaixa) {
           return false;
         }
       }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicao, selectedClube, selectedIdadeFaixa]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas]);
 
-  const activeFilterCount = (selectedPosicao ? 1 : 0) + (selectedClube ? 1 : 0) + (selectedIdadeFaixa > 0 ? 1 : 0);
+  const activeFilterCount = selectedPosicoes.length + selectedClubes.length + selectedIdadeFaixas.length;
 
   const clearFilters = () => {
-    setSelectedPosicao(null);
-    setSelectedClube(null);
-    setSelectedIdadeFaixa(0);
+    setSelectedPosicoes([]);
+    setSelectedClubes([]);
+    setSelectedIdadeFaixas([]);
+    setSelectedAtletasIds([]); // Limpar seleção de atletas também
+  };
+  
+  const toggleAtletaSelection = (id: number) => {
+    setSelectedAtletasIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((aid) => aid !== id)
+        : [...prev, id]
+    );
+  };
+  
+  const selectAllFiltered = () => {
+    setSelectedAtletasIds(filteredAtletas.map((a) => a.id));
+  };
+  
+  const deselectAll = () => {
+    setSelectedAtletasIds([]);
   };
 
   const onRefresh = useCallback(async () => {
@@ -105,8 +128,8 @@ export default function HomeScreen() {
   };
 
   const handleReportPress = () => {
-    if (filteredAtletas.length === 0) {
-      Alert.alert("Sem atletas", "Nenhum atleta encontrado com os filtros atuais.");
+    if (selectedAtletasIds.length === 0) {
+      Alert.alert("Selecione atletas", "Marque pelo menos um atleta para gerar o relatório.");
       return;
     }
     setShowReportConfirm(true);
@@ -116,11 +139,12 @@ export default function HomeScreen() {
     setShowReportConfirm(false);
     setGeneratingPdf(true);
     try {
-      const ids = filteredAtletas.map((a) => a.id);
+      // Usar atletas selecionados se houver, senão usar filtrados
+      const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
       const filters = {
-        posicao: selectedPosicao || "Todas",
-        faixaIdade: selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas",
-        clube: selectedClube || "Todos",
+        posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
+        faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
+        clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
         busca: searchQuery || undefined,
       };
       await generateReport(ids, filters);
@@ -136,8 +160,8 @@ export default function HomeScreen() {
   };
 
   const handleExcelPress = () => {
-    if (filteredAtletas.length === 0) {
-      Alert.alert("Sem atletas", "Nenhum atleta encontrado com os filtros atuais.");
+    if (selectedAtletasIds.length === 0) {
+      Alert.alert("Selecione atletas", "Marque pelo menos um atleta para gerar a planilha.");
       return;
     }
     handleConfirmExcel();
@@ -146,11 +170,12 @@ export default function HomeScreen() {
   const handleConfirmExcel = async () => {
     setGeneratingExcel(true);
     try {
-      const ids = filteredAtletas.map((a) => a.id);
+      // Usar atletas selecionados se houver, senão usar filtrados
+      const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
       const filters = {
-        posicao: selectedPosicao || "Todas",
-        faixaIdade: selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas",
-        clube: selectedClube || "Todos",
+        posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
+        faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
+        clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
         busca: searchQuery || undefined,
       };
       await generateExcel(ids, filters);
@@ -189,12 +214,20 @@ export default function HomeScreen() {
               <Text className="text-xs text-muted mt-0.5">Análise de Atletas</Text>
             </View>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/settings")}
-            className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
-          >
-            <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              onPress={() => router.push("/relatorio")}
+              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            >
+              <IconSymbol name="doc.text" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/settings")}
+              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            >
+              <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Barra de Busca */}
@@ -265,10 +298,10 @@ export default function HomeScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
             <View className="flex-row gap-2">
               <TouchableOpacity
-                onPress={() => setSelectedPosicao(null)}
+                onPress={() => setSelectedPosicoes([])}
                 style={{
-                  backgroundColor: !selectedPosicao ? colors.primary : colors.surface,
-                  borderWidth: !selectedPosicao ? 0 : 1,
+                  backgroundColor: selectedPosicoes.length === 0 ? colors.primary : colors.surface,
+                  borderWidth: selectedPosicoes.length === 0 ? 0 : 1,
                   borderColor: colors.border,
                   paddingHorizontal: 14,
                   paddingVertical: 8,
@@ -277,7 +310,7 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    color: !selectedPosicao ? "white" : colors.foreground,
+                    color: selectedPosicoes.length === 0 ? "white" : colors.foreground,
                     fontSize: 13,
                     fontWeight: "600",
                   }}
@@ -285,30 +318,39 @@ export default function HomeScreen() {
                   Todas
                 </Text>
               </TouchableOpacity>
-              {posicoes.map((pos) => (
-                <TouchableOpacity
-                  key={pos}
-                  onPress={() => setSelectedPosicao(selectedPosicao === pos ? null : pos)}
-                  style={{
-                    backgroundColor: selectedPosicao === pos ? colors.primary : colors.surface,
-                    borderWidth: selectedPosicao === pos ? 0 : 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                  }}
-                >
-                  <Text
+              {posicoes.map((pos) => {
+                const isSelected = selectedPosicoes.includes(pos);
+                return (
+                  <TouchableOpacity
+                    key={pos}
+                    onPress={() => {
+                      setSelectedPosicoes(
+                        isSelected
+                          ? selectedPosicoes.filter((p) => p !== pos)
+                          : [...selectedPosicoes, pos]
+                      );
+                    }}
                     style={{
-                      color: selectedPosicao === pos ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
+                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
                     }}
                   >
-                    {pos}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={{
+                        color: isSelected ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {pos}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
 
@@ -318,30 +360,39 @@ export default function HomeScreen() {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
             <View className="flex-row gap-2">
-              {FAIXAS_IDADE.map((faixa, idx) => (
-                <TouchableOpacity
-                  key={faixa.label}
-                  onPress={() => setSelectedIdadeFaixa(idx)}
-                  style={{
-                    backgroundColor: selectedIdadeFaixa === idx ? colors.primary : colors.surface,
-                    borderWidth: selectedIdadeFaixa === idx ? 0 : 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                  }}
-                >
-                  <Text
+              {FAIXAS_IDADE.map((faixa, idx) => {
+                const isSelected = selectedIdadeFaixas.includes(idx);
+                return (
+                  <TouchableOpacity
+                    key={faixa.label}
+                    onPress={() => {
+                      setSelectedIdadeFaixas(
+                        isSelected
+                          ? selectedIdadeFaixas.filter((i) => i !== idx)
+                          : [...selectedIdadeFaixas, idx]
+                      );
+                    }}
                     style={{
-                      color: selectedIdadeFaixa === idx ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
+                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
                     }}
                   >
-                    {faixa.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={{
+                        color: isSelected ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {faixa.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
 
@@ -352,10 +403,10 @@ export default function HomeScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
             <View className="flex-row gap-2">
               <TouchableOpacity
-                onPress={() => setSelectedClube(null)}
+                onPress={() => setSelectedClubes([])}
                 style={{
-                  backgroundColor: !selectedClube ? colors.primary : colors.surface,
-                  borderWidth: !selectedClube ? 0 : 1,
+                  backgroundColor: selectedClubes.length === 0 ? colors.primary : colors.surface,
+                  borderWidth: selectedClubes.length === 0 ? 0 : 1,
                   borderColor: colors.border,
                   paddingHorizontal: 14,
                   paddingVertical: 8,
@@ -364,7 +415,7 @@ export default function HomeScreen() {
               >
                 <Text
                   style={{
-                    color: !selectedClube ? "white" : colors.foreground,
+                    color: selectedClubes.length === 0 ? "white" : colors.foreground,
                     fontSize: 13,
                     fontWeight: "600",
                   }}
@@ -372,31 +423,40 @@ export default function HomeScreen() {
                   Todos
                 </Text>
               </TouchableOpacity>
-              {clubes.map((clube) => (
-                <TouchableOpacity
-                  key={clube}
-                  onPress={() => setSelectedClube(selectedClube === clube ? null : clube)}
-                  style={{
-                    backgroundColor: selectedClube === clube ? colors.primary : colors.surface,
-                    borderWidth: selectedClube === clube ? 0 : 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: selectedClube === clube ? "white" : colors.foreground,
-                      fontSize: 13,
-                      fontWeight: "600",
+              {clubes.map((clube) => {
+                const isSelected = selectedClubes.includes(clube);
+                return (
+                  <TouchableOpacity
+                    key={clube}
+                    onPress={() => {
+                      setSelectedClubes(
+                        isSelected
+                          ? selectedClubes.filter((c) => c !== clube)
+                          : [...selectedClubes, clube]
+                      );
                     }}
-                    numberOfLines={1}
+                    style={{
+                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderWidth: isSelected ? 0 : 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                    }}
                   >
-                    {clube}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={{
+                        color: isSelected ? "white" : colors.foreground,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {clube}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </ScrollView>
         </View>
@@ -454,69 +514,93 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+
+
       {/* Lista de Atletas */}
       <FlatList
         data={sortedAtletas}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }: { item: any }) => (
-          <TouchableOpacity
-            onPress={() => handleAtletaPress(item.id)}
-            className="mx-4 mb-3 bg-surface rounded-2xl p-4 border border-border flex-row items-center"
-            style={{
-              shadowColor: colors.primary,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
-            }}
-          >
-            {item.fotoUrl ? (
-              <Image
-                source={{ uri: item.fotoUrl }}
-                style={{ width: 56, height: 56, borderRadius: 28, marginRight: 16 }}
-                resizeMode="cover"
-                progressiveRenderingEnabled={true}
-              />
-            ) : (
-              <View className="w-14 h-14 rounded-full bg-primary/20 justify-center items-center mr-4">
-                <Text className="text-primary font-bold text-lg">
-                  {item.nome?.charAt(0).toUpperCase() || "?"}
+        renderItem={({ item }: { item: any }) => {
+          const isSelected = selectedAtletasIds.includes(item.id);
+          return (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginBottom: 12,
+                backgroundColor: isSelected ? colors.primary + "20" : colors.surface,
+                borderRadius: 16,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: isSelected ? colors.primary : colors.border,
+                flexDirection: "row",
+                alignItems: "center",
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            >
+
+              {item.fotoUrl ? (
+                <Image
+                  source={{ uri: item.fotoUrl }}
+                  style={{ width: 56, height: 56, borderRadius: 28, marginRight: 16 }}
+                  resizeMode="cover"
+                  progressiveRenderingEnabled={true}
+                />
+              ) : (
+                <View style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: colors.primary + "20",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: 16,
+                }}>
+                  <Text style={{ color: colors.primary, fontWeight: "bold", fontSize: 18 }}>
+                    {item.nome?.charAt(0).toUpperCase() || "?"}
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={() => handleAtletaPress(item.id)}
+                style={{ flex: 1 }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 4 }} numberOfLines={1}>
+                  {item.nome || "Sem nome"}
                 </Text>
-              </View>
-            )}
+                <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                  {item.posicao && (
+                    <View style={{ backgroundColor: colors.primary + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "500" }}>
+                        {item.posicao}
+                      </Text>
+                    </View>
+                  )}
+                  {item.clube && (
+                    <View style={{ backgroundColor: colors.muted + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }} numberOfLines={1}>
+                        {item.clube}
+                      </Text>
+                    </View>
+                  )}
+                  {item.idade != null && item.idade > 0 && (
+                    <View style={{ backgroundColor: colors.success + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 12, color: colors.success, fontWeight: "500" }}>
+                        {item.idade} anos
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
 
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                {item.nome || "Sem nome"}
-              </Text>
-              <View className="flex-row gap-2 mt-1 flex-wrap">
-                {item.posicao && (
-                  <View className="bg-primary/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-primary font-medium">
-                      {item.posicao}
-                    </Text>
-                  </View>
-                )}
-                {item.clube && (
-                  <View className="bg-muted/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-muted font-medium" numberOfLines={1}>
-                      {item.clube}
-                    </Text>
-                  </View>
-                )}
-                {item.idade != null && item.idade > 0 && (
-                  <View className="bg-success/10 rounded-full px-2 py-1">
-                    <Text className="text-xs text-success font-medium">
-                      {item.idade} anos
-                    </Text>
-                  </View>
-                )}
-              </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.muted} />
             </View>
-
-            <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-          </TouchableOpacity>
-        )}
+          );
+        }}
         ListEmptyComponent={
           !isLoading ? (
             <View className="flex-1 justify-center items-center py-12">
@@ -621,19 +705,19 @@ export default function HomeScreen() {
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Posição</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedPosicao || "Todas"}
+                    {selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas"}
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Faixa de Idade</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedIdadeFaixa > 0 ? FAIXAS_IDADE[selectedIdadeFaixa].label : "Todas"}
+                    {selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas"}
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Clube</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                    {selectedClube || "Todos"}
+                    {selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos"}
                   </Text>
                 </View>
                 {searchQuery ? (
