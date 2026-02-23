@@ -37,6 +37,7 @@ export default function FiltrosScreen() {
   const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
   const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
   const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
+  const [selectedNaturalidades, setSelectedNaturalidades] = useState<string[]>([]);
   
   // Seleção de atletas
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
@@ -54,6 +55,12 @@ export default function FiltrosScreen() {
   const clubes = useMemo(() => {
     const set = new Set<string>();
     atletas.forEach((a) => { if (a.clube) set.add(a.clube); });
+    return Array.from(set).sort();
+  }, [atletas]);
+
+  const naturalidades = useMemo(() => {
+    const set = new Set<string>();
+    atletas.forEach((a) => { if (a.naturalidade) set.add(a.naturalidade); });
     return Array.from(set).sort();
   }, [atletas]);
 
@@ -77,9 +84,13 @@ export default function FiltrosScreen() {
         });
         if (!matchesFaixa) return false;
       }
+      if (selectedNaturalidades.length > 0 && !selectedNaturalidades.includes(atleta.naturalidade || "")) {
+        return false;
+      }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades]);
+
 
   const toggleAtletaSelection = (id: number) => {
     setSelectedAtletasIds((prev) =>
@@ -284,6 +295,43 @@ export default function FiltrosScreen() {
                       }}
                     >
                       {faixa.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Filtros de Naturalidade */}
+            <View>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
+                NATURALIDADE
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {naturalidades.map((naturalidade) => (
+                  <TouchableOpacity
+                    key={naturalidade}
+                    onPress={() =>
+                      setSelectedNaturalidades((prev) =>
+                        prev.includes(naturalidade) ? prev.filter((n) => n !== naturalidade) : [...prev, naturalidade]
+                      )
+                    }
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 16,
+                      backgroundColor: selectedNaturalidades.includes(naturalidade) ? colors.primary : colors.surface,
+                      borderWidth: 1,
+                      borderColor: selectedNaturalidades.includes(naturalidade) ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: selectedNaturalidades.includes(naturalidade) ? "white" : colors.foreground,
+                        fontSize: 12,
+                        fontWeight: "500",
+                      }}
+                    >
+                      {naturalidade}
                     </Text>
                   </TouchableOpacity>
                 ))}
