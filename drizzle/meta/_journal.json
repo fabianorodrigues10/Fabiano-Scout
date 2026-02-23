@@ -36,6 +36,13 @@
       "when": 1771437816602,
       "tag": "0004_friendly_baron_zemo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1771884027680,
+      "tag": "0005_supreme_magik",
+      "breakpoints": true
     }
   ]
 }

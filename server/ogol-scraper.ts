@@ -13,6 +13,7 @@ export interface OgolPlayerData {
   pe: string | null; // "direito" | "esquerdo" | "ambidestro"
   clube: string | null;
   fotoUrl: string | null; // URL da foto do atleta
+  naturalidade: string | null; // Cidade/Estado de nascimento
 }
 
 /**
@@ -114,6 +115,7 @@ function parseOgolHtml(html: string): OgolPlayerData {
     pe: null,
     clube: null,
     fotoUrl: null,
+    naturalidade: null,
   };
 
   // Nome completo
@@ -145,6 +147,12 @@ function parseOgolHtml(html: string): OgolPlayerData {
   const peRaw = extractField(html, "Pé preferencial");
   if (peRaw) {
     result.pe = mapPe(peRaw);
+  }
+
+  // Naturalidade
+  const naturalidadeRaw = extractField(html, "Naturalidade");
+  if (naturalidadeRaw && naturalidadeRaw.length > 0) {
+    result.naturalidade = naturalidadeRaw;
   }
 
   // Altura / Peso

@@ -19,6 +19,7 @@ export interface OgolPlayerData {
   altura: number | null; // em metros (ex: 1.76)
   pe: string | null; // "direito" | "esquerdo" | "ambidestro"
   clube: string | null;
+  naturalidade: string | null; // Cidade/Estado de nascimento
 }
 
 /**
@@ -126,6 +127,7 @@ export function parseOgolHtml(html: string): OgolPlayerData {
     altura: null,
     pe: null,
     clube: null,
+    naturalidade: null,
   };
 
   // Nome completo
@@ -172,6 +174,12 @@ export function parseOgolHtml(html: string): OgolPlayerData {
   const clubeRaw = extractField(html, "Clube atual");
   if (clubeRaw && clubeRaw !== "Sem Clube" && clubeRaw.length > 1) {
     result.clube = clubeRaw;
+  }
+
+  // Naturalidade
+  const naturalidadeRaw = extractField(html, "Naturalidade");
+  if (naturalidadeRaw && naturalidadeRaw.length > 0) {
+    result.naturalidade = naturalidadeRaw;
   }
 
   return result;
@@ -243,6 +251,7 @@ export async function fetchOgolData(
             altura: jsonResult.altura ? parseFloat(String(jsonResult.altura)) / 100 : null,
             pe: jsonResult.pe ? mapPe(jsonResult.pe) : null,
             clube: jsonResult.clube || null,
+            naturalidade: jsonResult.naturalidade || null,
           };
           return { success: true, data };
         }

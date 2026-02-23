@@ -53,6 +53,7 @@ export default function AtletaFormScreen() {
   const [link, setLink] = useState("");
   const [escala, setEscala] = useState("");
   const [valencia, setValencia] = useState("");
+  const [naturalidade, setNaturalidade] = useState("");
   const [ogolLoading, setOgolLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -106,6 +107,7 @@ export default function AtletaFormScreen() {
       setLink(atleta.link || "");
       setEscala(atleta.escala || "");
       setValencia(atleta.valencia || "");
+      setNaturalidade(atleta.naturalidade || "");
     }
   }, [atleta]);
   
@@ -179,6 +181,10 @@ export default function AtletaFormScreen() {
       } else {
         setClubeNome(data.clube);
       }
+      preenchidos++;
+    }
+    if (data.naturalidade && !naturalidade.trim()) {
+      setNaturalidade(data.naturalidade);
       preenchidos++;
     }
 
@@ -425,6 +431,7 @@ export default function AtletaFormScreen() {
         link: link || undefined,
         escala: escala || undefined,
         valencia: valencia || undefined,
+        naturalidade: naturalidade || undefined,
       };
       
       if (isEdit) {
@@ -792,6 +799,21 @@ export default function AtletaFormScreen() {
               placeholderTextColor={colors.muted}
               value={escala}
               onChangeText={setEscala}
+              style={{ color: colors.foreground }}
+            />
+          </View>
+
+          {/* Naturalidade */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Naturalidade
+            </Text>
+            <TextInput
+              className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+              placeholder="Ex: São Paulo, SP ou Rio de Janeiro, RJ"
+              placeholderTextColor={colors.muted}
+              value={naturalidade}
+              onChangeText={setNaturalidade}
               style={{ color: colors.foreground }}
             />
           </View>

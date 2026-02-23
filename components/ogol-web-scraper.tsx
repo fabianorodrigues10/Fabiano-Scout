@@ -17,6 +17,7 @@ export interface OgolPlayerData {
   altura: number | null; // em metros (ex: 1.76)
   pe: string | null; // "direito" | "esquerdo" | "ambidestro"
   clube: string | null;
+  naturalidade: string | null; // Cidade/Estado de nascimento
 }
 
 interface OgolWebScraperProps {
@@ -38,7 +39,8 @@ const INJECTED_JS = `
       idade: null,
       altura: null,
       pe: null,
-      clube: null
+      clube: null,
+      naturalidade: null
     };
 
     // Busca todos os labels e valores na seção de dados pessoais
@@ -114,6 +116,9 @@ const INJECTED_JS = `
             result.clube = valueText;
           }
         }
+        else if (labelText.indexOf('Naturalidade') !== -1) {
+          result.naturalidade = valueText;
+        }
       }
     }
 
@@ -149,6 +154,12 @@ const INJECTED_JS = `
       var clubeMatch = bodyHtml.match(/Clube atual<\\/span>\\s*(?:<[^>]*>\\s*)*([^<]+)/i);
       if (clubeMatch && clubeMatch[1].trim() !== 'Sem Clube') {
         result.clube = clubeMatch[1].trim();
+      }
+
+      // Naturalidade
+      var naturalidadeMatch = bodyHtml.match(/Naturalidade<\\/span>\\s*(?:<[^>]*>\\s*)*([^<]+)/i);
+      if (naturalidadeMatch) {
+        result.naturalidade = naturalidadeMatch[1].trim();
       }
     }
 
