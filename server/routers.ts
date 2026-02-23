@@ -71,6 +71,7 @@ export const appRouter = router({
           posicao: z.string().max(100).optional(),
           segundaPosicao: z.string().max(100).optional(),
           clube: z.string().max(255).optional(),
+          naturalidade: z.string().max(255).optional(),
           dataNascimento: z.string().optional(), // ISO date string
           idade: z.number().optional(),
           altura: z.number().optional(),
@@ -88,6 +89,7 @@ export const appRouter = router({
           posicao: input.posicao || null,
           segundaPosicao: input.segundaPosicao || null,
           clube: input.clube || null,
+          naturalidade: input.naturalidade || null,
           dataNascimento: input.dataNascimento ? new Date(input.dataNascimento) : null,
           idade: input.idade || null,
           altura: input.altura?.toString() || null,
@@ -109,6 +111,7 @@ export const appRouter = router({
           posicao: z.string().max(100).optional(),
           segundaPosicao: z.string().max(100).optional(),
           clube: z.string().max(255).optional(),
+          naturalidade: z.string().max(255).optional(),
           dataNascimento: z.string().optional(),
           idade: z.number().optional(),
           altura: z.number().optional(),
