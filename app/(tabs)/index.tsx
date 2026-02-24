@@ -40,6 +40,7 @@ export default function HomeScreen() {
   const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
   const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
   const [selectedNaturalidades, setSelectedNaturalidades] = useState<string[]>([]);
+  const [selectedPes, setSelectedPes] = useState<string[]>([]);
   
   // Seleção de atletas para relatório
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
@@ -62,6 +63,12 @@ export default function HomeScreen() {
   const naturalidades = useMemo(() => {
     const set = new Set<string>();
     atletas.forEach((a) => { if (a.naturalidade) set.add(a.naturalidade); });
+    return Array.from(set).sort();
+  }, [atletas]);
+
+  const pes = useMemo(() => {
+    const set = new Set<string>();
+    atletas.forEach((a) => { if (a.pe) set.add(a.pe); });
     return Array.from(set).sort();
   }, [atletas]);
 
@@ -95,17 +102,22 @@ export default function HomeScreen() {
       if (selectedNaturalidades.length > 0 && !selectedNaturalidades.includes(atleta.naturalidade || "")) {
         return false;
       }
+      // Filtro por pé preferencial
+      if (selectedPes.length > 0 && !selectedPes.includes(atleta.pe || "")) {
+        return false;
+      }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades, selectedPes]);
 
-  const activeFilterCount = selectedPosicoes.length + selectedClubes.length + selectedIdadeFaixas.length + selectedNaturalidades.length;
+  const activeFilterCount = selectedPosicoes.length + selectedClubes.length + selectedIdadeFaixas.length + selectedNaturalidades.length + selectedPes.length;
 
   const clearFilters = () => {
     setSelectedPosicoes([]);
     setSelectedClubes([]);
     setSelectedIdadeFaixas([]);
     setSelectedNaturalidades([]);
+    setSelectedPes([]);
     setSelectedAtletasIds([]); // Limpar seleção de atletas também
   };
   
@@ -351,6 +363,18 @@ export default function HomeScreen() {
             onToggleOption={(nat) =>
               setSelectedNaturalidades((prev) =>
                 prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+              )
+            }
+          />
+
+          {/* Filtro de Pé Preferencial */}
+          <FilterDropdown
+            title="Pé Preferencial"
+            options={pes}
+            selectedOptions={selectedPes}
+            onToggleOption={(pe) =>
+              setSelectedPes((prev) =>
+                prev.includes(pe) ? prev.filter((p) => p !== pe) : [...prev, pe]
               )
             }
           />
