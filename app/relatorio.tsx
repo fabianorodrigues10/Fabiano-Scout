@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { FilterCheckbox } from "@/components/filter-checkbox";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
@@ -191,34 +192,18 @@ export default function RelatorioScreen() {
               <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
                 POSIÇÕES
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <View>
                 {posicoes.map((pos) => (
-                  <TouchableOpacity
+                  <FilterCheckbox
                     key={pos}
+                    label={pos}
+                    checked={selectedPosicoes.includes(pos)}
                     onPress={() =>
                       setSelectedPosicoes((prev) =>
                         prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
                       )
                     }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 16,
-                      backgroundColor: selectedPosicoes.includes(pos) ? colors.primary : colors.surface,
-                      borderWidth: 1,
-                      borderColor: selectedPosicoes.includes(pos) ? colors.primary : colors.border,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: selectedPosicoes.includes(pos) ? "white" : colors.foreground,
-                        fontSize: 12,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {pos}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 ))}
               </View>
             </View>
@@ -228,34 +213,18 @@ export default function RelatorioScreen() {
               <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
                 CLUBES
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <View>
                 {clubes.map((clube) => (
-                  <TouchableOpacity
+                  <FilterCheckbox
                     key={clube}
+                    label={clube}
+                    checked={selectedClubes.includes(clube)}
                     onPress={() =>
                       setSelectedClubes((prev) =>
                         prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
                       )
                     }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 16,
-                      backgroundColor: selectedClubes.includes(clube) ? colors.primary : colors.surface,
-                      borderWidth: 1,
-                      borderColor: selectedClubes.includes(clube) ? colors.primary : colors.border,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: selectedClubes.includes(clube) ? "white" : colors.foreground,
-                        fontSize: 12,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {clube}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 ))}
               </View>
             </View>
@@ -265,34 +234,18 @@ export default function RelatorioScreen() {
               <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
                 FAIXA DE IDADE
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <View>
                 {FAIXAS_IDADE.map((faixa, idx) => (
-                  <TouchableOpacity
+                  <FilterCheckbox
                     key={idx}
+                    label={faixa.label}
+                    checked={selectedIdadeFaixas.includes(idx)}
                     onPress={() =>
                       setSelectedIdadeFaixas((prev) =>
                         prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
                       )
                     }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 16,
-                      backgroundColor: selectedIdadeFaixas.includes(idx) ? colors.primary : colors.surface,
-                      borderWidth: 1,
-                      borderColor: selectedIdadeFaixas.includes(idx) ? colors.primary : colors.border,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: selectedIdadeFaixas.includes(idx) ? "white" : colors.foreground,
-                        fontSize: 12,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {faixa.label}
-                    </Text>
-                  </TouchableOpacity>
+                  />
                 ))}
               </View>
             </View>
