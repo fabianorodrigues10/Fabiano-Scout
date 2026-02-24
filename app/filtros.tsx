@@ -170,7 +170,7 @@ export default function FiltrosScreen() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} scrollEnabled={true}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }} scrollEnabled={true}>
         <View style={{ padding: 16, gap: 12 }}>
           {/* Busca */}
           <TextInput
