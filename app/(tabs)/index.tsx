@@ -303,7 +303,7 @@ export default function HomeScreen() {
 
       {/* Painel de Filtros */}
       {showFilters && (
-        <ScrollView className="px-4 pb-3 bg-background border-b border-border" contentContainerStyle={{ gap: 12 }} scrollEnabled={true}>
+        <View className="px-4 pb-3 bg-background border-b border-border gap-3">
           {/* Filtro de Posições */}
           <FilterDropdown
             title="Posições"
@@ -354,7 +354,7 @@ export default function HomeScreen() {
               )
             }
           />
-        </ScrollView>
+        </View>
       )}
 
       {/* Seção de Ordenação e Exportação */}
