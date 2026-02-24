@@ -13,7 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { FilterCheckbox } from "@/components/filter-checkbox";
+import { FilterDropdown } from "@/components/filter-dropdown";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
@@ -39,6 +39,7 @@ export default function RelatorioScreen() {
   const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
   const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
   const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
+  const [selectedNaturalidades, setSelectedNaturalidades] = useState<string[]>([]);
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -61,6 +62,14 @@ export default function RelatorioScreen() {
     return Array.from(set).sort();
   }, [atletas]);
 
+  const naturalidades = useMemo(() => {
+    const set = new Set<string>();
+    atletas.forEach((a: any) => {
+      if (a.naturalidade) set.add(a.naturalidade);
+    });
+    return Array.from(set).sort();
+  }, [atletas]);
+
   // Filtrar atletas
   const filteredAtletas = useMemo(() => {
     return atletas.filter((atleta: any) => {
@@ -71,6 +80,9 @@ export default function RelatorioScreen() {
         return false;
       }
       if (selectedClubes.length > 0 && !selectedClubes.includes(atleta.clube || "")) {
+        return false;
+      }
+      if (selectedNaturalidades.length > 0 && !selectedNaturalidades.includes(atleta.naturalidade || "")) {
         return false;
       }
       if (selectedIdadeFaixas.length > 0) {
@@ -187,70 +199,58 @@ export default function RelatorioScreen() {
               placeholderTextColor={colors.muted}
             />
 
-            {/* Filtros de Posição */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                POSIÇÕES
-              </Text>
-              <View>
-                {posicoes.map((pos) => (
-                  <FilterCheckbox
-                    key={pos}
-                    label={pos}
-                    checked={selectedPosicoes.includes(pos)}
-                    onPress={() =>
-                      setSelectedPosicoes((prev) =>
-                        prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Posição */}
+            <FilterDropdown
+              title="Posições"
+              options={posicoes}
+              selectedOptions={selectedPosicoes}
+              onToggleOption={(pos) =>
+                setSelectedPosicoes((prev) =>
+                  prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+                )
+              }
+            />
 
-            {/* Filtros de Clube */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                CLUBES
-              </Text>
-              <View>
-                {clubes.map((clube) => (
-                  <FilterCheckbox
-                    key={clube}
-                    label={clube}
-                    checked={selectedClubes.includes(clube)}
-                    onPress={() =>
-                      setSelectedClubes((prev) =>
-                        prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Clube */}
+            <FilterDropdown
+              title="Clubes"
+              options={clubes}
+              selectedOptions={selectedClubes}
+              onToggleOption={(clube) =>
+                setSelectedClubes((prev) =>
+                  prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
+                )
+              }
+            />
 
-            {/* Filtros de Idade */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                FAIXA DE IDADE
-              </Text>
-              <View>
-                {FAIXAS_IDADE.map((faixa, idx) => (
-                  <FilterCheckbox
-                    key={idx}
-                    label={faixa.label}
-                    checked={selectedIdadeFaixas.includes(idx)}
-                    onPress={() =>
-                      setSelectedIdadeFaixas((prev) =>
-                        prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Idade */}
+            <FilterDropdown
+              title="Faixa de Idade"
+              options={FAIXAS_IDADE.map((f) => f.label)}
+              selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
+              onToggleOption={(label) => {
+                const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
+                if (idx !== -1) {
+                  setSelectedIdadeFaixas((prev) =>
+                    prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+                  );
+                }
+              }}
+            />
 
-            {/* Botões de Seleção */}
+            {/* Filtro de Naturalidade */}
+            <FilterDropdown
+              title="Naturalidade"
+              options={naturalidades}
+              selectedOptions={selectedNaturalidades}
+              onToggleOption={(nat) =>
+                setSelectedNaturalidades((prev) =>
+                  prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+                )
+              }
+            />
+
+            {/* Botoes de Selecao */}
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 onPress={selectAllFiltered}

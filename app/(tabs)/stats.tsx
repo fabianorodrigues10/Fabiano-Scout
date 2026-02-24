@@ -7,6 +7,7 @@ import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { useMemo, useState } from "react";
+import { FilterDropdown } from "@/components/filter-dropdown";
 
 interface Atleta {
   id: number;
@@ -42,6 +43,7 @@ interface Filtros {
   escalas: string[];
   clubes: string[];
   idades: number[];
+  naturalidades: string[];
 }
 
 export default function StatsScreen() {
@@ -53,12 +55,13 @@ export default function StatsScreen() {
     escalas: [],
     clubes: [],
     idades: [],
+    naturalidades: [],
   });
   const [atletasSelecionados, setAtletasSelecionados] = useState<number[]>([]);
   const [showFiltros, setShowFiltros] = useState(false);
   const [showSelecao, setShowSelecao] = useState(false);
   const [showTabela, setShowTabela] = useState(false);
-  const [abaFiltros, setAbaFiltros] = useState<"posicao" | "idade" | "clube" | "escala">("posicao");
+  const [abaFiltros, setAbaFiltros] = useState<"posicao" | "idade" | "clube" | "escala" | "naturalidade">("posicao");
 
   const { data: atletas = [] } = trpc.atletas.list.useQuery();
 
@@ -71,6 +74,9 @@ export default function StatsScreen() {
         return false;
       }
       if (filtros.clubes.length > 0 && !filtros.clubes.includes(atleta.clube)) {
+        return false;
+      }
+      if (filtros.naturalidades.length > 0 && !filtros.naturalidades.includes(atleta.naturalidade)) {
         return false;
       }
       if (filtros.idades.length > 0 && atleta.idade) {
@@ -156,6 +162,7 @@ export default function StatsScreen() {
   const posicoes = useMemo(() => [...new Set(atletas.map((a: any) => a.posicao).filter(Boolean))], [atletas]);
   const clubes = useMemo(() => [...new Set(atletas.map((a: any) => a.clube).filter(Boolean))], [atletas]);
   const escalas = useMemo(() => [...new Set(atletas.map((a: any) => a.escala).filter(Boolean))], [atletas]);
+  const naturalidades = useMemo(() => [...new Set(atletas.map((a: any) => a.naturalidade).filter(Boolean))], [atletas]);
 
   const posicoesPorcentagem = useMemo(() => {
     return Object.entries(stats.posicoes).map(([name, value]) => ({
@@ -234,6 +241,7 @@ export default function StatsScreen() {
       escalas: [],
       clubes: [],
       idades: [],
+      naturalidades: [],
     });
   };
 
@@ -420,14 +428,14 @@ export default function StatsScreen() {
 
             {/* Abas */}
             <View className="flex-row border-b border-border">
-              {(["posicao", "idade", "clube", "escala"] as const).map((aba) => (
+              {(["posicao", "idade", "clube", "escala", "naturalidade"] as const).map((aba) => (
                 <TouchableOpacity
                   key={aba}
                   onPress={() => setAbaFiltros(aba)}
                   className={`flex-1 py-3 items-center border-b-2 ${abaFiltros === aba ? "border-primary" : "border-transparent"}`}
                 >
                   <Text className={`font-semibold capitalize ${abaFiltros === aba ? "text-primary" : "text-muted"}`}>
-                    {aba === "posicao" ? "Posição" : aba === "idade" ? "Idade" : aba === "clube" ? "Clube" : "Escala"}
+                    {aba === "posicao" ? "Posição" : aba === "idade" ? "Idade" : aba === "clube" ? "Clube" : aba === "escala" ? "Escala" : "Naturalidade"}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -529,6 +537,31 @@ export default function StatsScreen() {
                     >
                       <Text className={`font-medium ${filtros.escalas.includes(escala) ? "text-primary" : "text-foreground"}`}>
                         {escala}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {abaFiltros === "naturalidade" && (
+                <View className="gap-2">
+                  {naturalidades.map((naturalidade) => (
+                    <TouchableOpacity
+                      key={naturalidade}
+                      onPress={() => {
+                        setFiltros({
+                          ...filtros,
+                          naturalidades: filtros.naturalidades.includes(naturalidade)
+                            ? filtros.naturalidades.filter((n) => n !== naturalidade)
+                            : [...filtros.naturalidades, naturalidade],
+                        });
+                      }}
+                      className={`p-3 rounded-lg border ${
+                        filtros.naturalidades.includes(naturalidade) ? "bg-primary/20 border-primary" : "bg-surface border-border"
+                      }`}
+                    >
+                      <Text className={`font-medium ${filtros.naturalidades.includes(naturalidade) ? "text-primary" : "text-foreground"}`}>
+                        {naturalidade}
                       </Text>
                     </TouchableOpacity>
                   ))}
