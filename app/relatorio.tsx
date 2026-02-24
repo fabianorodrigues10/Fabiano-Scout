@@ -97,7 +97,7 @@ export default function RelatorioScreen() {
       }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -165,8 +165,9 @@ export default function RelatorioScreen() {
     }
   };
 
-  return (
-    <ScreenContainer className="flex-1 bg-background">
+  // Renderizar header com todos os elementos
+  const renderHeader = () => (
+    <View>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -177,118 +178,124 @@ export default function RelatorioScreen() {
         </Text>
       </View>
 
+      {/* Conteúdo dos Filtros */}
+      <View style={{ padding: 16, gap: 12 }}>
+        {/* Busca */}
+        <TextInput
+          placeholder="Buscar atleta..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={{
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            color: colors.foreground,
+          }}
+          placeholderTextColor={colors.muted}
+        />
+
+        {/* Filtro de Posição */}
+        <FilterDropdown
+          title="Posições"
+          options={posicoes}
+          selectedOptions={selectedPosicoes}
+          onToggleOption={(pos) =>
+            setSelectedPosicoes((prev) =>
+              prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+            )
+          }
+        />
+
+        {/* Filtro de Clube */}
+        <FilterDropdown
+          title="Clubes"
+          options={clubes}
+          selectedOptions={selectedClubes}
+          onToggleOption={(clube) =>
+            setSelectedClubes((prev) =>
+              prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
+            )
+          }
+        />
+
+        {/* Filtro de Idade */}
+        <FilterDropdown
+          title="Faixa de Idade"
+          options={FAIXAS_IDADE.map((f) => f.label)}
+          selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
+          onToggleOption={(label) => {
+            const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
+            if (idx !== -1) {
+              setSelectedIdadeFaixas((prev) =>
+                prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+              );
+            }
+          }}
+        />
+
+        {/* Filtro de Naturalidade */}
+        <FilterDropdown
+          title="Naturalidade"
+          options={naturalidades}
+          selectedOptions={selectedNaturalidades}
+          onToggleOption={(nat) =>
+            setSelectedNaturalidades((prev) =>
+              prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+            )
+          }
+        />
+
+        {/* Botoes de Selecao */}
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TouchableOpacity
+            onPress={selectAllFiltered}
+            style={{
+              flex: 1,
+              backgroundColor: colors.surface,
+              borderRadius: 8,
+              paddingVertical: 8,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
+              Selecionar Todos ({selectedAtletasIds.length}/{filteredAtletas.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={deselectAll}
+            style={{
+              flex: 1,
+              backgroundColor: colors.surface,
+              borderRadius: 8,
+              paddingVertical: 8,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
+              Desselecionar
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
+          Atletas ({filteredAtletas.length})
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <ScreenContainer className="bg-background p-0">
+      {/* Lista de Atletas com Header */}
       <FlatList
+        ListHeaderComponent={renderHeader}
         data={filteredAtletas}
         keyExtractor={(item) => item.id.toString()}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={
-          <View style={{ padding: 16, gap: 12 }}>
-            {/* Busca */}
-            <TextInput
-              placeholder="Buscar atleta..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={{
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                color: colors.foreground,
-              }}
-              placeholderTextColor={colors.muted}
-            />
-
-            {/* Filtro de Posição */}
-            <FilterDropdown
-              title="Posições"
-              options={posicoes}
-              selectedOptions={selectedPosicoes}
-              onToggleOption={(pos) =>
-                setSelectedPosicoes((prev) =>
-                  prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
-                )
-              }
-            />
-
-            {/* Filtro de Clube */}
-            <FilterDropdown
-              title="Clubes"
-              options={clubes}
-              selectedOptions={selectedClubes}
-              onToggleOption={(clube) =>
-                setSelectedClubes((prev) =>
-                  prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
-                )
-              }
-            />
-
-            {/* Filtro de Idade */}
-            <FilterDropdown
-              title="Faixa de Idade"
-              options={FAIXAS_IDADE.map((f) => f.label)}
-              selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
-              onToggleOption={(label) => {
-                const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
-                if (idx !== -1) {
-                  setSelectedIdadeFaixas((prev) =>
-                    prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-                  );
-                }
-              }}
-            />
-
-            {/* Filtro de Naturalidade */}
-            <FilterDropdown
-              title="Naturalidade"
-              options={naturalidades}
-              selectedOptions={selectedNaturalidades}
-              onToggleOption={(nat) =>
-                setSelectedNaturalidades((prev) =>
-                  prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
-                )
-              }
-            />
-
-            {/* Botoes de Selecao */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity
-                onPress={selectAllFiltered}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 8,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
-                  Selecionar Todos ({selectedAtletasIds.length}/{filteredAtletas.length})
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={deselectAll}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 8,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
-                  Desselecionar
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
-              Atletas ({filteredAtletas.length})
-            </Text>
-          </View>
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         renderItem={({ item }) => {
           const isSelected = selectedAtletasIds.includes(item.id);
           return (
@@ -329,7 +336,7 @@ export default function RelatorioScreen() {
           );
         }}
         ListFooterComponent={
-          <View style={{ padding: 16, gap: 8 }}>
+          <View style={{ padding: 16, gap: 8, marginBottom: 100 }}>
             <TouchableOpacity
               onPress={handleGenerateReport}
               disabled={generatingPdf || selectedAtletasIds.length === 0}
@@ -361,6 +368,8 @@ export default function RelatorioScreen() {
             </TouchableOpacity>
           </View>
         }
+        contentContainerStyle={{ paddingTop: 0, paddingBottom: 0 }}
+        scrollEnabled={true}
       />
     </ScreenContainer>
   );

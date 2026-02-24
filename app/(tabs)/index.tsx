@@ -1,4 +1,3 @@
-import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -19,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
 import { FilterDropdown } from "@/components/filter-dropdown";
+import { useState, useMemo, useCallback } from "react";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -223,8 +223,9 @@ export default function HomeScreen() {
     return sorted;
   }, [filteredAtletas, sortBy]);
 
-  return (
-    <ScreenContainer className="bg-background">
+  // Renderizar header com todos os elementos
+  const renderHeader = () => (
+    <View>
       {/* Header com Logo */}
       <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
         <View className="flex-row justify-between items-center mb-4">
@@ -432,11 +433,14 @@ export default function HomeScreen() {
           <IconSymbol name="square.and.arrow.down" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
+    </View>
+  );
 
-
-
-      {/* Lista de Atletas */}
+  return (
+    <ScreenContainer className="bg-background p-0">
+      {/* Lista de Atletas com Header */}
       <FlatList
+        ListHeaderComponent={renderHeader}
         data={sortedAtletas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }: { item: any }) => {
@@ -542,182 +546,43 @@ export default function HomeScreen() {
             tintColor={colors.primary}
           />
         }
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
         scrollEnabled={true}
       />
 
       {/* Modal de Confirmação do Relatório */}
       <Modal
         visible={showReportConfirm}
-        transparent
+        transparent={true}
         animationType="fade"
         onRequestClose={() => setShowReportConfirm(false)}
       >
-        <View
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 24 }}
-        >
-          <View
-            style={{
-              backgroundColor: colors.background,
-              borderRadius: 20,
-              padding: 24,
-              width: "100%",
-              maxWidth: 360,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.25,
-              shadowRadius: 16,
-              elevation: 10,
-            }}
-          >
-            {/* Ícone do topo */}
-            <View style={{ alignItems: "center", marginBottom: 16 }}>
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: colors.primary + "20",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <IconSymbol name="doc.text.fill" size={28} color={colors.primary} />
-              </View>
-            </View>
-
-            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.foreground, textAlign: "center", marginBottom: 4 }}>
-              Gerar Relatório PDF
+        <View className="flex-1 bg-black/50 justify-center items-center px-4">
+          <View className="bg-surface rounded-2xl p-6 w-full max-w-sm">
+            <Text className="text-xl font-bold text-foreground mb-4">Gerar Relatório</Text>
+            <Text className="text-sm text-muted mb-6">
+              {selectedAtletasIds.length} atleta{selectedAtletasIds.length !== 1 ? "s" : ""} selecionado{selectedAtletasIds.length !== 1 ? "s" : ""}
             </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", marginBottom: 20 }}>
-              Confira os detalhes antes de gerar
-            </Text>
-
-            {/* Resumo */}
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 20,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              {/* Quantidade de atletas */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <Text style={{ fontSize: 14, color: colors.muted }}>Atletas incluídos</Text>
-                <View style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "white" }}>{filteredAtletas.length}</Text>
-                </View>
-              </View>
-
-              {/* Separador */}
-              <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
-
-              {/* Filtros aplicados */}
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
-                Filtros aplicados
-              </Text>
-
-              <View style={{ gap: 6 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Posição</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas"}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Faixa de Idade</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas"}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>Clube</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                    {selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos"}
-                  </Text>
-                </View>
-                {searchQuery ? (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <Text style={{ fontSize: 13, color: colors.muted }}>Busca</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                      "{searchQuery}"
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-
-            {/* Botões */}
-            <View style={{ flexDirection: "row", gap: 12 }}>
+            <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setShowReportConfirm(false)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  alignItems: "center",
-                }}
+                className="flex-1 py-3 rounded-lg border border-border"
               >
-                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>Cancelar</Text>
+                <Text className="text-center text-foreground font-medium">Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleConfirmReport}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: colors.primary,
-                  alignItems: "center",
-                }}
+                disabled={generatingPdf}
+                className="flex-1 py-3 rounded-lg bg-primary"
               >
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "white" }}>Gerar PDF</Text>
+                <Text className="text-center text-white font-medium">
+                  {generatingPdf ? "Gerando..." : "Gerar"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
-      {/* FAB - Botão Gerar Relatório */}
-      <TouchableOpacity
-        onPress={handleReportPress}
-        disabled={generatingPdf}
-        className="absolute bottom-8 right-24 w-14 h-14 rounded-full justify-center items-center"
-        style={{
-          backgroundColor: generatingPdf ? colors.muted : colors.foreground,
-          shadowColor: colors.foreground,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-          elevation: 6,
-        }}
-      >
-        {generatingPdf ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <IconSymbol name="doc.text.fill" size={22} color={colors.background} />
-        )}
-      </TouchableOpacity>
-
-      {/* FAB - Botão Adicionar */}
-      <TouchableOpacity
-        onPress={handleAddAtleta}
-        className="absolute bottom-8 right-4 w-16 h-16 rounded-full bg-primary justify-center items-center"
-        style={{
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}
-      >
-        <Text className="text-white text-3xl font-bold">+</Text>
-      </TouchableOpacity>
     </ScreenContainer>
   );
 }
