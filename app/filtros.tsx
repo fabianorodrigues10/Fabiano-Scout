@@ -159,7 +159,7 @@ export default function FiltrosScreen() {
   };
 
   return (
-    <ScreenContainer className="flex-1 bg-background">
+    <ScreenContainer className="bg-background">
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TouchableOpacity onPress={() => router.back()}>
