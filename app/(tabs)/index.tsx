@@ -18,6 +18,7 @@ import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
+import { FilterDropdown } from "@/components/filter-dropdown";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
   const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
   const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
+  const [selectedNaturalidades, setSelectedNaturalidades] = useState<string[]>([]);
   
   // Seleção de atletas para relatório
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
@@ -54,6 +56,12 @@ export default function HomeScreen() {
   const clubes = useMemo(() => {
     const set = new Set<string>();
     atletas.forEach((a) => { if (a.clube) set.add(a.clube); });
+    return Array.from(set).sort();
+  }, [atletas]);
+
+  const naturalidades = useMemo(() => {
+    const set = new Set<string>();
+    atletas.forEach((a) => { if (a.naturalidade) set.add(a.naturalidade); });
     return Array.from(set).sort();
   }, [atletas]);
 
@@ -83,16 +91,21 @@ export default function HomeScreen() {
           return false;
         }
       }
+      // Filtro por naturalidade
+      if (selectedNaturalidades.length > 0 && !selectedNaturalidades.includes(atleta.naturalidade || "")) {
+        return false;
+      }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades]);
 
-  const activeFilterCount = selectedPosicoes.length + selectedClubes.length + selectedIdadeFaixas.length;
+  const activeFilterCount = selectedPosicoes.length + selectedClubes.length + selectedIdadeFaixas.length + selectedNaturalidades.length;
 
   const clearFilters = () => {
     setSelectedPosicoes([]);
     setSelectedClubes([]);
     setSelectedIdadeFaixas([]);
+    setSelectedNaturalidades([]);
     setSelectedAtletasIds([]); // Limpar seleção de atletas também
   };
   
@@ -290,175 +303,57 @@ export default function HomeScreen() {
 
       {/* Painel de Filtros */}
       {showFilters && (
-        <View className="px-4 pb-3 bg-background border-b border-border">
-          {/* Filtro por Posição */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-2">
-            Posição
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => setSelectedPosicoes([])}
-                style={{
-                  backgroundColor: selectedPosicoes.length === 0 ? colors.primary : colors.surface,
-                  borderWidth: selectedPosicoes.length === 0 ? 0 : 1,
-                  borderColor: colors.border,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    color: selectedPosicoes.length === 0 ? "white" : colors.foreground,
-                    fontSize: 13,
-                    fontWeight: "600",
-                  }}
-                >
-                  Todas
-                </Text>
-              </TouchableOpacity>
-              {posicoes.map((pos) => {
-                const isSelected = selectedPosicoes.includes(pos);
-                return (
-                  <TouchableOpacity
-                    key={pos}
-                    onPress={() => {
-                      setSelectedPosicoes(
-                        isSelected
-                          ? selectedPosicoes.filter((p) => p !== pos)
-                          : [...selectedPosicoes, pos]
-                      );
-                    }}
-                    style={{
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
-                      borderWidth: isSelected ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? "white" : colors.foreground,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {pos}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
+        <View className="px-4 pb-3 bg-background border-b border-border gap-3">
+          {/* Filtro de Posições */}
+          <FilterDropdown
+            title="Posições"
+            options={posicoes}
+            selectedOptions={selectedPosicoes}
+            onToggleOption={(pos) =>
+              setSelectedPosicoes((prev) =>
+                prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+              )
+            }
+          />
 
-          {/* Filtro por Faixa de Idade */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-            Faixa de Idade
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-            <View className="flex-row gap-2">
-              {FAIXAS_IDADE.map((faixa, idx) => {
-                const isSelected = selectedIdadeFaixas.includes(idx);
-                return (
-                  <TouchableOpacity
-                    key={faixa.label}
-                    onPress={() => {
-                      setSelectedIdadeFaixas(
-                        isSelected
-                          ? selectedIdadeFaixas.filter((i) => i !== idx)
-                          : [...selectedIdadeFaixas, idx]
-                      );
-                    }}
-                    style={{
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
-                      borderWidth: isSelected ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? "white" : colors.foreground,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {faixa.label}
-                    </Text>
-                  </TouchableOpacity>
+          {/* Filtro de Faixa de Idade */}
+          <FilterDropdown
+            title="Faixa de Idade"
+            options={FAIXAS_IDADE.map((f) => f.label)}
+            selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
+            onToggleOption={(label) => {
+              const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
+              if (idx !== -1) {
+                setSelectedIdadeFaixas((prev) =>
+                  prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
                 );
-              })}
-            </View>
-          </ScrollView>
+              }
+            }}
+          />
 
-          {/* Filtro por Clube */}
-          <Text className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-            Clube
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => setSelectedClubes([])}
-                style={{
-                  backgroundColor: selectedClubes.length === 0 ? colors.primary : colors.surface,
-                  borderWidth: selectedClubes.length === 0 ? 0 : 1,
-                  borderColor: colors.border,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                }}
-              >
-                <Text
-                  style={{
-                    color: selectedClubes.length === 0 ? "white" : colors.foreground,
-                    fontSize: 13,
-                    fontWeight: "600",
-                  }}
-                >
-                  Todos
-                </Text>
-              </TouchableOpacity>
-              {clubes.map((clube) => {
-                const isSelected = selectedClubes.includes(clube);
-                return (
-                  <TouchableOpacity
-                    key={clube}
-                    onPress={() => {
-                      setSelectedClubes(
-                        isSelected
-                          ? selectedClubes.filter((c) => c !== clube)
-                          : [...selectedClubes, clube]
-                      );
-                    }}
-                    style={{
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
-                      borderWidth: isSelected ? 0 : 1,
-                      borderColor: colors.border,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: isSelected ? "white" : colors.foreground,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
-                      numberOfLines={1}
-                    >
-                      {clube}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
+          {/* Filtro de Clubes */}
+          <FilterDropdown
+            title="Clubes"
+            options={clubes}
+            selectedOptions={selectedClubes}
+            onToggleOption={(clube) =>
+              setSelectedClubes((prev) =>
+                prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
+              )
+            }
+          />
+
+          {/* Filtro de Naturalidade */}
+          <FilterDropdown
+            title="Naturalidade"
+            options={naturalidades}
+            selectedOptions={selectedNaturalidades}
+            onToggleOption={(nat) =>
+              setSelectedNaturalidades((prev) =>
+                prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+              )
+            }
+          />
         </View>
       )}
 
