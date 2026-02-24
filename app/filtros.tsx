@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { FilterCheckbox } from "@/components/filter-checkbox";
+import { FilterDropdown } from "@/components/filter-dropdown";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
@@ -191,89 +192,57 @@ export default function FiltrosScreen() {
               placeholderTextColor={colors.muted}
             />
 
-            {/* Filtros de Posição */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                POSIÇÕES
-              </Text>
-              <View>
-                {posicoes.map((pos) => (
-                  <FilterCheckbox
-                    key={pos}
-                    label={pos}
-                    checked={selectedPosicoes.includes(pos)}
-                    onPress={() =>
-                      setSelectedPosicoes((prev) =>
-                        prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Posições */}
+            <FilterDropdown
+              title="Posições"
+              options={posicoes}
+              selectedOptions={selectedPosicoes}
+              onToggleOption={(pos) =>
+                setSelectedPosicoes((prev) =>
+                  prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+                )
+              }
+            />
 
-            {/* Filtros de Clube */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                CLUBES
-              </Text>
-              <View>
-                {clubes.map((clube) => (
-                  <FilterCheckbox
-                    key={clube}
-                    label={clube}
-                    checked={selectedClubes.includes(clube)}
-                    onPress={() =>
-                      setSelectedClubes((prev) =>
-                        prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Clubes */}
+            <FilterDropdown
+              title="Clubes"
+              options={clubes}
+              selectedOptions={selectedClubes}
+              onToggleOption={(clube) =>
+                setSelectedClubes((prev) =>
+                  prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
+                )
+              }
+            />
 
-            {/* Filtros de Idade */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                FAIXA DE IDADE
-              </Text>
-              <View>
-                {FAIXAS_IDADE.map((faixa, idx) => (
-                  <FilterCheckbox
-                    key={idx}
-                    label={faixa.label}
-                    checked={selectedIdadeFaixas.includes(idx)}
-                    onPress={() =>
-                      setSelectedIdadeFaixas((prev) =>
-                        prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Faixa de Idade */}
+            <FilterDropdown
+              title="Faixa de Idade"
+              options={FAIXAS_IDADE.map((f) => f.label)}
+              selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
+              onToggleOption={(label) => {
+                const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
+                if (idx !== -1) {
+                  setSelectedIdadeFaixas((prev) =>
+                    prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+                  );
+                }
+              }}
+            />
 
-            {/* Filtros de Naturalidade */}
-            <View>
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
-                NATURALIDADE (ESTADOS)
-              </Text>
-              <View>
-                {naturalidades.map((naturalidade) => (
-                  <FilterCheckbox
-                    key={naturalidade}
-                    label={naturalidade}
-                    checked={selectedNaturalidades.includes(naturalidade)}
-                    onPress={() =>
-                      setSelectedNaturalidades((prev) =>
-                        prev.includes(naturalidade) ? prev.filter((n) => n !== naturalidade) : [...prev, naturalidade]
-                      )
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Filtro de Naturalidade */}
+            <FilterDropdown
+              title="Naturalidade"
+              options={naturalidades}
+              selectedOptions={selectedNaturalidades}
+              onToggleOption={(nat) =>
+                setSelectedNaturalidades((prev) =>
+                  prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+                )
+              }
+            />
+
 
             {/* Botões de Seleção */}
             <View style={{ flexDirection: "row", gap: 8 }}>
