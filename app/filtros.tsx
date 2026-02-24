@@ -175,7 +175,8 @@ export default function FiltrosScreen() {
         keyExtractor={(item) => item.id.toString()}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
-          <View style={{ padding: 16, gap: 12 }}>
+          <ScrollView scrollEnabled={true} nestedScrollEnabled={true}>
+            <View style={{ padding: 16, gap: 12 }}>
             {/* Busca */}
             <TextInput
               placeholder="Buscar atleta..."
@@ -245,7 +246,7 @@ export default function FiltrosScreen() {
 
 
             {/* Botões de Seleção */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
               <TouchableOpacity
                 onPress={selectAllFiltered}
                 style={{
@@ -281,7 +282,8 @@ export default function FiltrosScreen() {
             <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
               Atletas ({filteredAtletas.length})
             </Text>
-          </View>
+            </View>
+          </ScrollView>
         }
         renderItem={({ item }) => {
           const isSelected = selectedAtletasIds.includes(item.id);
