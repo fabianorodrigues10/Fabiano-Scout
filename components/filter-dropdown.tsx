@@ -8,6 +8,7 @@ interface FilterDropdownProps {
   options: string[];
   selectedOptions: string[];
   onToggleOption: (option: string) => void;
+  closeOnSelect?: boolean;
 }
 
 export function FilterDropdown({
@@ -15,6 +16,7 @@ export function FilterDropdown({
   options,
   selectedOptions,
   onToggleOption,
+  closeOnSelect = true,
 }: FilterDropdownProps) {
   const colors = useColors();
   const [isOpen, setIsOpen] = useState(false);
@@ -72,7 +74,12 @@ export function FilterDropdown({
             {options.map((option) => (
               <TouchableOpacity
                 key={option}
-                onPress={() => onToggleOption(option)}
+                onPress={() => {
+                  onToggleOption(option);
+                  if (closeOnSelect) {
+                    setIsOpen(false);
+                  }
+                }}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
