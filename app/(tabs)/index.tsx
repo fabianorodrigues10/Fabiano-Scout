@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -106,43 +106,35 @@ export default function HomeScreen() {
     setSelectedClubes([]);
     setSelectedIdadeFaixas([]);
     setSelectedNaturalidades([]);
-    setSelectedAtletasIds([]); // Limpar seleção de atletas também
-  };
-  
-  const toggleAtletaSelection = (id: number) => {
-    setSelectedAtletasIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((aid) => aid !== id)
-        : [...prev, id]
-    );
-  };
-  
-  const selectAllFiltered = () => {
-    setSelectedAtletasIds(filteredAtletas.map((a) => a.id));
-  };
-  
-  const deselectAll = () => {
-    setSelectedAtletasIds([]);
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
-
+  // Ordenação
+  const [sortBy, setSortBy] = useState<"nome" | "idade" | "altura">("nome");
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
-  const [sortBy, setSortBy] = useState<"nome" | "idade" | "altura">("nome");
 
-  const handleAddAtleta = () => {
-    router.push("/atleta/novo" as any);
+  const sortedAtletas = useMemo(() => {
+    const sorted = [...filteredAtletas];
+    if (sortBy === "nome") {
+      sorted.sort((a, b) => a.nome.localeCompare(b.nome));
+    } else if (sortBy === "idade") {
+      sorted.sort((a, b) => (b.idade ?? 0) - (a.idade ?? 0));
+    } else if (sortBy === "altura") {
+      sorted.sort((a, b) => (b.altura ?? 0) - (a.altura ?? 0));
+    }
+    return sorted;
+  }, [filteredAtletas, sortBy]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
   };
 
   const handleReportPress = () => {
     if (selectedAtletasIds.length === 0) {
-      Alert.alert("Selecione atletas", "Marque pelo menos um atleta para gerar o relatório.");
+      Alert.alert("Nenhum atleta selecionado", "Selecione pelo menos um atleta para gerar o relatório");
       return;
     }
     setShowReportConfirm(true);
@@ -152,68 +144,37 @@ export default function HomeScreen() {
     setShowReportConfirm(false);
     setGeneratingPdf(true);
     try {
-      // Usar atletas selecionados se houver, senão usar filtrados
-      const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
-      const filters = {
-        posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
-        faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
-        clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
-        busca: searchQuery || undefined,
-      };
-      await generateReport(ids, filters);
-    } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível gerar o relatório.");
+      const selectedAtletasData = sortedAtletas.filter((a) => selectedAtletasIds.includes(a.id));
+      await generateReport(selectedAtletasData, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades, searchQuery);
+      Alert.alert("Sucesso", "Relatório PDF gerado com sucesso!");
+      setSelectedAtletasIds([]);
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao gerar o relatório");
     } finally {
       setGeneratingPdf(false);
     }
   };
 
-  const handleAtletaPress = (id: number) => {
-    router.push(`/atleta/detalhes/${id}` as any);
-  };
-
-  const handleExcelPress = () => {
-    if (selectedAtletasIds.length === 0) {
-      Alert.alert("Selecione atletas", "Marque pelo menos um atleta para gerar a planilha.");
-      return;
-    }
-    handleConfirmExcel();
-  };
-
-  const handleConfirmExcel = async () => {
+  const handleExcelPress = async () => {
     setGeneratingExcel(true);
     try {
-      // Usar atletas selecionados se houver, senão usar filtrados
-      const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
-      const filters = {
-        posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
-        faixaIdade: selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas",
-        clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
-        busca: searchQuery || undefined,
-      };
-      await generateExcel(ids, filters);
-    } catch (error: any) {
-      Alert.alert("Erro", error.message || "Não foi possível gerar a planilha.");
+      const selectedAtletasData = sortedAtletas.filter((a) => selectedAtletasIds.includes(a.id));
+      await generateExcel(selectedAtletasData);
+      Alert.alert("Sucesso", "Arquivo Excel gerado com sucesso!");
+      setSelectedAtletasIds([]);
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao gerar o arquivo Excel");
     } finally {
       setGeneratingExcel(false);
     }
   };
 
-  const sortedAtletas = useMemo(() => {
-    const sorted = [...filteredAtletas];
-    if (sortBy === "nome") {
-      sorted.sort((a, b) => a.nome.localeCompare(b.nome));
-    } else if (sortBy === "idade") {
-      sorted.sort((a, b) => Number(b.idade ?? 0) - Number(a.idade ?? 0));
-    } else if (sortBy === "altura") {
-      sorted.sort((a, b) => Number(b.altura ?? 0) - Number(a.altura ?? 0));
-    }
-    return sorted;
-  }, [filteredAtletas, sortBy]);
+  const handleAddAtleta = () => {
+    router.push("/atleta/novo");
+  };
 
-  return (
-    <ScreenContainer className="bg-background">
-      {/* Header com Logo */}
+  const renderHeader = () => (
+    <>
       <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
         <View className="flex-row justify-between items-center mb-4">
           <View className="flex-row items-center gap-3 flex-1">
@@ -287,23 +248,23 @@ export default function HomeScreen() {
             )}
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Contador de Resultados */}
-        <View className="flex-row justify-between items-center mt-3">
-          <Text className="text-sm text-muted">
-            {filteredAtletas.length} atleta{filteredAtletas.length !== 1 ? "s" : ""} encontrado{filteredAtletas.length !== 1 ? "s" : ""}
-          </Text>
-          {activeFilterCount > 0 && (
-            <TouchableOpacity onPress={clearFilters}>
-              <Text className="text-sm text-primary font-medium">Limpar filtros</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Contador de Resultados */}
+      <View className="flex-row justify-between items-center mt-3 px-4">
+        <Text className="text-sm text-muted">
+          {filteredAtletas.length} atleta{filteredAtletas.length !== 1 ? "s" : ""} encontrado{filteredAtletas.length !== 1 ? "s" : ""}
+        </Text>
+        {activeFilterCount > 0 && (
+          <TouchableOpacity onPress={clearFilters}>
+            <Text className="text-sm text-primary font-medium">Limpar filtros</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Painel de Filtros */}
       {showFilters && (
-        <ScrollView className="bg-background border-b border-border" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 12 }} scrollEnabled={true}>
+        <View className="bg-background border-b border-border px-4 pb-3 gap-3">
           {/* Filtro de Posições */}
           <FilterDropdown
             title="Posições"
@@ -354,7 +315,7 @@ export default function HomeScreen() {
               )
             }
           />
-        </ScrollView>
+        </View>
       )}
 
       {/* Seção de Ordenação e Exportação */}
@@ -408,11 +369,13 @@ export default function HomeScreen() {
           <IconSymbol name="square.and.arrow.down" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
+    </>
+  );
 
-
-
-      {/* Lista de Atletas */}
+  return (
+    <ScreenContainer className="bg-background">
       <FlatList
+        ListHeaderComponent={renderHeader}
         data={sortedAtletas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }: { item: any }) => {
@@ -449,46 +412,55 @@ export default function HomeScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  backgroundColor: colors.primary + "20",
+                  backgroundColor: colors.primary + "30",
                   justifyContent: "center",
                   alignItems: "center",
                   marginRight: 16,
                 }}>
-                  <Text style={{ color: colors.primary, fontWeight: "bold", fontSize: 18 }}>
-                    {item.nome?.charAt(0).toUpperCase() || "?"}
+                  <Text style={{ fontSize: 24, fontWeight: "700", color: colors.primary }}>
+                    {item.nome.charAt(0).toUpperCase()}
                   </Text>
                 </View>
               )}
 
               <TouchableOpacity
-                onPress={() => handleAtletaPress(item.id)}
+                onPress={() => {
+                  if (selectedAtletasIds.includes(item.id)) {
+                    setSelectedAtletasIds(selectedAtletasIds.filter((id) => id !== item.id));
+                  } else {
+                    setSelectedAtletasIds([...selectedAtletasIds, item.id]);
+                  }
+                }}
+                onLongPress={() => router.push(`/atleta/detalhes/${item.id}`)}
                 style={{ flex: 1 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 4 }} numberOfLines={1}>
-                  {item.nome || "Sem nome"}
-                </Text>
-                <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-                  {item.posicao && (
-                    <View style={{ backgroundColor: colors.primary + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "500" }}>
-                        {item.posicao}
-                      </Text>
-                    </View>
-                  )}
-                  {item.clube && (
-                    <View style={{ backgroundColor: colors.muted + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }} numberOfLines={1}>
-                        {item.clube}
-                      </Text>
-                    </View>
-                  )}
-                  {item.idade != null && item.idade > 0 && (
-                    <View style={{ backgroundColor: colors.success + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <Text style={{ fontSize: 12, color: colors.success, fontWeight: "500" }}>
-                        {item.idade} anos
-                      </Text>
-                    </View>
-                  )}
+                <View style={{ flexDirection: "column", gap: 4 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>
+                    {item.nome}
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                    {item.posicao && (
+                      <View style={{ backgroundColor: colors.primary + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "500" }}>
+                          {item.posicao}
+                        </Text>
+                      </View>
+                    )}
+                    {item.clube && (
+                      <View style={{ backgroundColor: colors.warning + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 12, color: colors.warning, fontWeight: "500" }}>
+                          {item.clube}
+                        </Text>
+                      </View>
+                    )}
+                    {item.idade != null && item.idade > 0 && (
+                      <View style={{ backgroundColor: colors.success + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 12, color: colors.success, fontWeight: "500" }}>
+                          {item.idade} anos
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
 
@@ -562,68 +534,56 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.foreground, textAlign: "center", marginBottom: 4 }}>
-              Gerar Relatório PDF
+            {/* Texto */}
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground, textAlign: "center", marginBottom: 8 }}>
+              Gerar Relatório
             </Text>
             <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center", marginBottom: 20 }}>
-              Confira os detalhes antes de gerar
+              {selectedAtletasIds.length} atleta{selectedAtletasIds.length !== 1 ? "s" : ""} selecionado{selectedAtletasIds.length !== 1 ? "s" : ""}
             </Text>
 
-            {/* Resumo */}
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 20,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              {/* Quantidade de atletas */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <Text style={{ fontSize: 14, color: colors.muted }}>Atletas incluídos</Text>
-                <View style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "white" }}>{filteredAtletas.length}</Text>
-                </View>
-              </View>
-
-              {/* Separador */}
-              <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
-
-              {/* Filtros aplicados */}
-              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
-                Filtros aplicados
-              </Text>
-
-              <View style={{ gap: 6 }}>
+            {/* Resumo dos Filtros */}
+            <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, gap: 12 }}>
+              {selectedPosicoes.length > 0 && (
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Posição</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas"}
+                    {selectedPosicoes.join(", ")}
                   </Text>
                 </View>
+              )}
+              {selectedIdadeFaixas.length > 0 && (
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Faixa de Idade</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }}>
-                    {selectedIdadeFaixas.length > 0 ? selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ") : "Todas"}
+                    {selectedIdadeFaixas.map(i => FAIXAS_IDADE[i].label).join(", ")}
                   </Text>
                 </View>
+              )}
+              {selectedClubes.length > 0 && (
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontSize: 13, color: colors.muted }}>Clube</Text>
                   <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                    {selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos"}
+                    {selectedClubes.join(", ")}
                   </Text>
                 </View>
-                {searchQuery ? (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <Text style={{ fontSize: 13, color: colors.muted }}>Busca</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
-                      "{searchQuery}"
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              )}
+              {selectedNaturalidades.length > 0 && (
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontSize: 13, color: colors.muted }}>Naturalidade</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
+                    {selectedNaturalidades.join(", ")}
+                  </Text>
+                </View>
+              )}
+              {searchQuery ? (
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontSize: 13, color: colors.muted }}>Busca</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.foreground }} numberOfLines={1}>
+                    "{searchQuery}"
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             {/* Botões */}
