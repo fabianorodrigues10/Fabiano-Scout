@@ -63,8 +63,9 @@ export function FilterDropdown({
             backgroundColor: colors.surface,
             borderWidth: 1,
             borderColor: colors.border,
-            maxHeight: 200,
-            overflow: "hidden",
+            maxHeight: 300,
+            overflow: "visible",
+            zIndex: 1000,
           }}
         >
           <ScrollView scrollEnabled={options.length > 6}>
