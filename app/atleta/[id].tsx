@@ -284,8 +284,8 @@ export default function AtletaFormScreen() {
       return;
     }
     
-    // Validar formato de clube (NOME/XX ou XX-XXX)
-    let clubeFormatado = clube;
+    // Validar e formatar clube (NOME/XX ou XX-XXX)
+    let clubeFormatado = "";
     if (clubeNome.trim() || clubeEstado.trim()) {
       if (!clubeNome.trim() || !clubeEstado.trim()) {
         Alert.alert("Erro", "Se preencheu o clube, preencha tanto o nome quanto o estado/país");
@@ -297,7 +297,6 @@ export default function AtletaFormScreen() {
         return;
       }
       clubeFormatado = `${clubeNome.trim()}/${clubeEstado.trim()}`;
-      setClube(clubeFormatado);
     }
     
     // Validar duplicata completa (apenas ao criar novo atleta)
@@ -337,7 +336,7 @@ export default function AtletaFormScreen() {
         nome: nome.toLowerCase().trim(),
         posicao: (posicao || "").toLowerCase().trim(),
         segundaPosicao: (segundaPosicao || "").toLowerCase().trim(),
-        clube: (clube || "").toLowerCase().trim(),
+        clube: (clubeFormatado || "").toLowerCase().trim(),
         dataNascimento: dataNascimentoISO,
         idade: idadeNum,
         altura: alturaNum,
@@ -383,10 +382,10 @@ export default function AtletaFormScreen() {
       }
     }
     
-    executarCadastro();
+    executarCadastro(clubeFormatado);
   };
   
-  const executarCadastro = async () => {
+  const executarCadastro = async (clubeFormatado?: string) => {
     
     try {
       let dataNascimentoISO: string | undefined = undefined;
@@ -423,7 +422,7 @@ export default function AtletaFormScreen() {
         nome: nome.trim(),
         posicao: posicao || undefined,
         segundaPosicao: segundaPosicao || undefined,
-        clube: clube || undefined,
+        clube: clubeFormatado || undefined,
         dataNascimento: dataNascimentoISO,
         idade: idadeNum,
         altura: alturaNum,

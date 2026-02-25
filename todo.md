@@ -187,3 +187,7 @@
 ## Bug: Campo busca perde foco após cada letra
 - [x] Investigar causa raiz (TextInput dentro de ListHeaderComponent da FlatList causa remount)
 - [x] Corrigir: mover header com logo e busca para fora da FlatList como elemento fixo
+
+## Bug: Campo "Clube Atual" não está sendo salvo
+- [x] Investigar por que clube atual não persiste após edição
+- [x] Corrigir: passar clubeFormatado para executarCadastro em vez de usar estado clube
