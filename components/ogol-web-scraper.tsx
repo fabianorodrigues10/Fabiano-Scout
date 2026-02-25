@@ -140,8 +140,9 @@ const INJECTED_JS = `
 
       // Posição - múltiplos padrões
       var posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<span[^>]*>([^<]+)/i);
-      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
-      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<[^>]*>\s*<span[^>]*>([^<]+)/i);
+      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
+      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<div[^>]*>\s*<span[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
+      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<div[^>]*>.*?<span class="card-data__value">([^<]+)/is);
       if (posMatch) result.posicao = posMatch[1].trim();
 
       // Pé
@@ -152,18 +153,19 @@ const INJECTED_JS = `
       var altMatch2 = bodyHtml.match(/Altura[^<]*<\/span>\s*<span[^>]*>\s*(\d{3})\s*cm/i);
       if (altMatch2) result.altura = parseInt(altMatch2[1]) / 100;
 
-      // Clube - múltiplos padrões
-      var clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
-      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      // Clube - múltiplos padrões (pode estar oculto com d-none)
+      var clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*>([^<]+)/is);
+      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual[^<]*<\/[^>]*>\s*<div[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>.*?<div[^>]*class="text">([^<]+)/is);
       if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
       if (clubeMatch && clubeMatch[1].trim() !== 'Sem Clube') {
         result.clube = clubeMatch[1].trim();
       }
 
       // Naturalidade - múltiplos padrões
-      var naturalidadeMatch = bodyHtml.match(/Naturalidade<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
-      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade[^<]*<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
-      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
+      var naturalidadeMatch = bodyHtml.match(/País de Nascimento \(Naturalidade\)<\/span>\s*<span[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
+      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/País de Nascimento[^<]*<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
       if (naturalidadeMatch) {
         result.naturalidade = naturalidadeMatch[1].trim();
       }
