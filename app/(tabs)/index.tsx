@@ -264,7 +264,7 @@ export default function HomeScreen() {
 
         {/* Barra de Busca */}
         <View className="flex-row gap-2">
-          <View className="flex-1 bg-surface rounded-full px-4 py-3 border border-border flex-row items-center">
+          <View className="flex-1 bg-surface rounded-full px-4 py-3 border border-border flex-row items-center" pointerEvents="box-none">
             <IconSymbol name="magnifyingglass" size={18} color={colors.muted} />
             <TextInput
               placeholder="Buscar atleta..."
