@@ -242,6 +242,12 @@ export default function HomeScreen() {
           </View>
           <View className="flex-row gap-2">
             <TouchableOpacity
+              onPress={handleAddAtleta}
+              className="w-10 h-10 rounded-full bg-primary justify-center items-center"
+            >
+              <IconSymbol name="plus" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => router.push("/relatorio")}
               className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
             >
