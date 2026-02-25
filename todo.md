@@ -177,3 +177,9 @@
 - [x] Investigar por que regex não captura posição, clube e naturalidade no WebView
 - [x] Analisar HTML real renderizado no WebView vs fetch direto
 - [x] Corrigir padrões de extração para funcionar com HTML renderizado
+
+## Foto de Atleta na Web
+- [x] Verificar se upload de foto está implementado
+- [x] Implementar upload de foto funcional na web (input file) e celular (ImagePicker)
+- [x] Criar rota uploadFoto no servidor com base64 + S3 storage
+- [x] Invalidar cache após upload para atualizar galeria e foto do atleta

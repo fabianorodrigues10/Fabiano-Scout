@@ -4,6 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import * as db from "./db";
+import { storagePut } from "./storage";
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -375,6 +376,43 @@ export const appRouter = router({
         const random = Math.random().toString(36).substring(7);
         const s3Key = `atletas/${userId}/${input.atletaId}/${timestamp}-${random}-${input.fileName}`;
         return { s3Key };
+      }),
+
+    // Upload de foto com base64 (funciona na web e celular)
+    uploadFoto: publicProcedure
+      .input(
+        z.object({
+          atletaId: z.number(),
+          fileName: z.string().min(1).max(255),
+          mimeType: z.string(),
+          base64Data: z.string(), // base64 encoded image data
+          descricao: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user?.id || 1;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(7);
+        const s3Key = `atletas/${userId}/${input.atletaId}/${timestamp}-${random}-${input.fileName}`;
+        
+        // Decodifica base64 e faz upload ao S3
+        const buffer = Buffer.from(input.base64Data, 'base64');
+        const { url } = await storagePut(s3Key, buffer, input.mimeType);
+        
+        // Salva referência no banco
+        const id = await db.createMidia({
+          userId,
+          atletaId: input.atletaId,
+          tipo: 'foto',
+          nome: input.fileName,
+          url,
+          s3Key,
+          mimeType: input.mimeType,
+          tamanho: buffer.length,
+          descricao: input.descricao,
+        });
+        
+        return { id, url };
       }),
 
     // Listar mídias de um atleta

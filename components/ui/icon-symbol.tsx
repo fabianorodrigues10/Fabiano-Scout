@@ -46,6 +46,7 @@ const MAPPING = {
   "target": "gps-fixed",
   "photo.fill": "photo",
   "person.crop.circle.badge.exclamationmark": "person-off",
+  "camera.fill": "photo-camera",
 } as IconMapping;
 
 /**
