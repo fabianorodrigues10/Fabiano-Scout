@@ -172,3 +172,8 @@
 - [x] Implementar fallback para web: abre Ogol em nova aba
 - [x] Manter WebView no celular (funciona perfeitamente)
 - [x] Testar na web e celular
+
+## Bug: Extração Ogol não captura posição, clube e naturalidade
+- [x] Investigar por que regex não captura posição, clube e naturalidade no WebView
+- [x] Analisar HTML real renderizado no WebView vs fetch direto
+- [x] Corrigir padrões de extração para funcionar com HTML renderizado

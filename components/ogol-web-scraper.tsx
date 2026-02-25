@@ -63,18 +63,27 @@ const INJECTED_JS = `
       }
     }
 
-    // Abordagem 1: Pares label/value com classes
-    if (labels.length > 0) {
-      for (var i = 0; i < labels.length; i++) {
-        var labelText = labels[i].textContent ? labels[i].textContent.trim() : '';
-        // O valor pode ser o próximo sibling, ou o elemento correspondente em values
-        var valueEl = labels[i].nextElementSibling;
-        var valueText = '';
+    // Abordagem 1: Busca por card-data__row (cada row tem label + value)
+    var rows = document.querySelectorAll('.card-data__row');
+    if (rows.length > 0) {
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var labelEl = row.querySelector('.card-data__label');
+        if (!labelEl) continue;
+        var labelText = labelEl.textContent ? labelEl.textContent.trim() : '';
         
-        if (valueEl) {
+        // Busca o valor: pode ser .card-data__value, .card-data__values, ou .text dentro de micrologo_and_text
+        var valueText = '';
+        var valueEl = row.querySelector('.card-data__value');
+        var textEl = row.querySelector('.micrologo_and_text .text');
+        var valuesEl = row.querySelector('.card-data__values');
+        
+        if (textEl) {
+          valueText = textEl.textContent ? textEl.textContent.trim() : '';
+        } else if (valueEl) {
           valueText = valueEl.textContent ? valueEl.textContent.trim() : '';
-        } else if (values[i]) {
-          valueText = values[i].textContent ? values[i].textContent.trim() : '';
+        } else if (valuesEl) {
+          valueText = valuesEl.textContent ? valuesEl.textContent.trim() : '';
         }
 
         if (!valueText) continue;
@@ -82,15 +91,13 @@ const INJECTED_JS = `
         if (labelText === 'Nome' || labelText === 'Nome Completo') {
           result.nome = valueText;
         }
-        else if (labelText.indexOf('Data de Nascimento') !== -1 || labelText.indexOf('Nascimento') !== -1) {
-          // Formato: "1997-03-28 (28 anos)" ou "28/03/1997 (28 anos)"
+        else if (labelText.indexOf('Data de Nascimento') !== -1) {
           var dateMatch = valueText.match(/(\\d{4})-(\\d{2})-(\\d{2})\\s*\\((\\d+)\\s*anos?\\)/);
           if (dateMatch) {
             var yy = dateMatch[1].slice(2);
             result.dataNascimento = dateMatch[3] + '/' + dateMatch[2] + '/' + yy;
             result.idade = parseInt(dateMatch[4]);
           } else {
-            // Tenta formato dd/mm/yyyy
             var dateMatch2 = valueText.match(/(\\d{2})\\/(\\d{2})\\/(\\d{4})\\s*\\((\\d+)\\s*anos?\\)/);
             if (dateMatch2) {
               var yy2 = dateMatch2[3].slice(2);
@@ -99,36 +106,53 @@ const INJECTED_JS = `
             }
           }
         }
-        else if (labelText.indexOf('Posi') !== -1 && labelText.indexOf('o') !== -1) {
-          result.posicao = valueText;
+        else if (labelText === 'Posi\u00e7\u00e3o' || labelText === 'Posicao' || (labelText.indexOf('Posi') !== -1 && labelText.length < 20)) {
+          // Posição: o valor está dentro de card-data__values > card-data__value
+          var posValueEl = row.querySelector('.card-data__value');
+          if (posValueEl) {
+            result.posicao = posValueEl.textContent ? posValueEl.textContent.trim() : '';
+          } else {
+            result.posicao = valueText;
+          }
         }
-        else if (labelText.indexOf('preferencial') !== -1 || (labelText.indexOf('P') !== -1 && labelText.indexOf('preferencial') !== -1)) {
+        else if (labelText.indexOf('preferencial') !== -1) {
           result.pe = valueText.toLowerCase();
         }
-        else if (labelText === 'Altura' || labelText.indexOf('Altura') !== -1) {
+        else if (labelText.indexOf('Altura') !== -1) {
           var altMatch = valueText.match(/(\\d{3})\\s*cm/);
           if (altMatch) {
             result.altura = parseInt(altMatch[1]) / 100;
           }
         }
         else if (labelText.indexOf('Clube atual') !== -1 || labelText === 'Clube') {
-          if (valueText !== 'Sem Clube') {
-            result.clube = valueText;
+          // Clube: valor pode estar em .text dentro de micrologo_and_text
+          var clubeTextEl = row.querySelector('.micrologo_and_text .text');
+          var clubeValue = clubeTextEl ? (clubeTextEl.textContent ? clubeTextEl.textContent.trim() : '') : valueText;
+          if (clubeValue && clubeValue !== 'Sem Clube') {
+            result.clube = clubeValue;
           }
         }
-        else if (labelText.indexOf('Naturalidade') !== -1) {
-          result.naturalidade = valueText;
+        else if (labelText.indexOf('Naturalidade') !== -1 || (labelText.indexOf('Nascimento') !== -1 && labelText.indexOf('Data') === -1)) {
+          // Naturalidade: valor pode estar em .text dentro de micrologo_and_text
+          var natTextEl = row.querySelector('.micrologo_and_text .text');
+          if (natTextEl) {
+            result.naturalidade = natTextEl.textContent ? natTextEl.textContent.trim() : '';
+          } else {
+            result.naturalidade = valueText;
+          }
         }
       }
     }
 
-    // Abordagem 2: Fallback com regex no HTML inteiro
-    if (!result.nome && !result.posicao) {
+    // Abordagem 2: Fallback com regex no HTML inteiro (roda se algum campo importante estiver faltando)
+    if (!result.posicao || !result.clube || !result.naturalidade || !result.nome) {
       var bodyHtml = document.body ? document.body.innerHTML : '';
       
-      // Nome
-      var nomeMatch = bodyHtml.match(/Nome<\\/span>\\s*<span[^>]*>([^<]+)/i);
-      if (nomeMatch) result.nome = nomeMatch[1].trim();
+      // Nome (só se não encontrou na Abordagem 1)
+      if (!result.nome) {
+        var nomeMatch = bodyHtml.match(/Nome<\\/span>\\s*<span[^>]*>([^<]+)/i);
+        if (nomeMatch) result.nome = nomeMatch[1].trim();
+      }
 
       // Data de nascimento
       var dataMatch = bodyHtml.match(/Data de Nascimento<\\/span>\\s*<span[^>]*>\\s*(\\d{4})-(\\d{2})-(\\d{2})\\s*\\((\\d+)\\s*anos?\\)/i);
@@ -138,12 +162,14 @@ const INJECTED_JS = `
         result.idade = parseInt(dataMatch[4]);
       }
 
-      // Posição - múltiplos padrões
-      var posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<span[^>]*>([^<]+)/i);
-      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
-      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<div[^>]*>\s*<span[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
-      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<div[^>]*>.*?<span class="card-data__value">([^<]+)/is);
-      if (posMatch) result.posicao = posMatch[1].trim();
+      // Posição - múltiplos padrões (só se não encontrou na Abordagem 1)
+      if (!result.posicao) {
+        var posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<span[^>]*>([^<]+)/i);
+        if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
+        if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<div[^>]*>\s*<span[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>([^<]+)/i);
+        if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<div[^>]*>.*?<span class="card-data__value">([^<]+)/is);
+        if (posMatch) result.posicao = posMatch[1].trim();
+      }
 
       // Pé
       var peMatch = bodyHtml.match(/P[ée] preferencial<\/span>\s*<span[^>]*>([^<]+)/i);
@@ -153,21 +179,25 @@ const INJECTED_JS = `
       var altMatch2 = bodyHtml.match(/Altura[^<]*<\/span>\s*<span[^>]*>\s*(\d{3})\s*cm/i);
       if (altMatch2) result.altura = parseInt(altMatch2[1]) / 100;
 
-      // Clube - múltiplos padrões (pode estar oculto com d-none)
-      var clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*>([^<]+)/is);
-      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
-      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual[^<]*<\/[^>]*>\s*<div[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>.*?<div[^>]*class="text">([^<]+)/is);
-      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
-      if (clubeMatch && clubeMatch[1].trim() !== 'Sem Clube') {
-        result.clube = clubeMatch[1].trim();
+      // Clube - múltiplos padrões (só se não encontrou na Abordagem 1)
+      if (!result.clube) {
+        var clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*>([^<]+)/is);
+        if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+        if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube atual[^<]*<\/[^>]*>\s*<div[^>]*class="card-data__values"[^>]*>\s*<span[^>]*>.*?<div[^>]*class="text">([^<]+)/is);
+        if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
+        if (clubeMatch && clubeMatch[1].trim() !== 'Sem Clube') {
+          result.clube = clubeMatch[1].trim();
+        }
       }
 
-      // Naturalidade - múltiplos padrões
-      var naturalidadeMatch = bodyHtml.match(/País de Nascimento \(Naturalidade\)<\/span>\s*<span[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
-      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
-      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/País de Nascimento[^<]*<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
-      if (naturalidadeMatch) {
-        result.naturalidade = naturalidadeMatch[1].trim();
+      // Naturalidade - múltiplos padrões (só se não encontrou na Abordagem 1)
+      if (!result.naturalidade) {
+        var naturalidadeMatch = bodyHtml.match(/País de Nascimento \(Naturalidade\)<\/span>\s*<span[^>]*>\s*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
+        if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+        if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/País de Nascimento[^<]*<\/span>\s*(?:<[^>]*>\s*)*<div[^>]*>\s*<div[^>]*>\s*<a[^>]*>.*?<\/a>\s*<\/div>\s*<div[^>]*class="text">([^<]+)/is);
+        if (naturalidadeMatch) {
+          result.naturalidade = naturalidadeMatch[1].trim();
+        }
       }
     }
 
