@@ -138,26 +138,32 @@ const INJECTED_JS = `
         result.idade = parseInt(dataMatch[4]);
       }
 
-      // Posição
-      var posMatch = bodyHtml.match(/Posi[çc][ãa]o<\\/span>\\s*<span[^>]*>([^<]+)/i);
+      // Posição - múltiplos padrões
+      var posMatch = bodyHtml.match(/Posi[çc][ãa]o<\/span>\s*<span[^>]*>([^<]+)/i);
+      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
+      if (!posMatch) posMatch = bodyHtml.match(/Posi[çc][ãa]o[^<]*<\/[^>]*>\s*<[^>]*>\s*<span[^>]*>([^<]+)/i);
       if (posMatch) result.posicao = posMatch[1].trim();
 
       // Pé
-      var peMatch = bodyHtml.match(/P[ée] preferencial<\\/span>\\s*<span[^>]*>([^<]+)/i);
+      var peMatch = bodyHtml.match(/P[ée] preferencial<\/span>\s*<span[^>]*>([^<]+)/i);
       if (peMatch) result.pe = peMatch[1].trim().toLowerCase();
 
       // Altura
-      var altMatch2 = bodyHtml.match(/Altura[^<]*<\\/span>\\s*<span[^>]*>\\s*(\\d{3})\\s*cm/i);
+      var altMatch2 = bodyHtml.match(/Altura[^<]*<\/span>\s*<span[^>]*>\s*(\d{3})\s*cm/i);
       if (altMatch2) result.altura = parseInt(altMatch2[1]) / 100;
 
-      // Clube
-      var clubeMatch = bodyHtml.match(/Clube atual<\\/span>\\s*(?:<[^>]*>\\s*)*([^<]+)/i);
+      // Clube - múltiplos padrões
+      var clubeMatch = bodyHtml.match(/Clube atual<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!clubeMatch) clubeMatch = bodyHtml.match(/Clube[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
       if (clubeMatch && clubeMatch[1].trim() !== 'Sem Clube') {
         result.clube = clubeMatch[1].trim();
       }
 
-      // Naturalidade
-      var naturalidadeMatch = bodyHtml.match(/Naturalidade<\\/span>\\s*(?:<[^>]*>\\s*)*([^<]+)/i);
+      // Naturalidade - múltiplos padrões
+      var naturalidadeMatch = bodyHtml.match(/Naturalidade<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade[^<]*<\/span>\s*(?:<[^>]*>\s*)*([^<]+)/i);
+      if (!naturalidadeMatch) naturalidadeMatch = bodyHtml.match(/Naturalidade[^<]*<\/[^>]*>\s*<span[^>]*>([^<]+)/i);
       if (naturalidadeMatch) {
         result.naturalidade = naturalidadeMatch[1].trim();
       }
