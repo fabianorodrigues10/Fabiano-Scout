@@ -18,7 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
 import { FilterDropdown } from "@/components/filter-dropdown";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
 
   // Filtros (multi-seleção)
   const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
@@ -118,7 +119,7 @@ export default function HomeScreen() {
     setSelectedIdadeFaixas([]);
     setSelectedNaturalidades([]);
     setSelectedPes([]);
-    setSelectedAtletasIds([]); // Limpar seleção de atletas também
+    setSelectedAtletasIds([]);
   };
   
   const toggleAtletaSelection = (id: number) => {
@@ -164,7 +165,6 @@ export default function HomeScreen() {
     setShowReportConfirm(false);
     setGeneratingPdf(true);
     try {
-      // Usar atletas selecionados se houver, senão usar filtrados
       const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
       const filters = {
         posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
@@ -195,7 +195,6 @@ export default function HomeScreen() {
   const handleConfirmExcel = async () => {
     setGeneratingExcel(true);
     try {
-      // Usar atletas selecionados se houver, senão usar filtrados
       const ids = selectedAtletasIds.length > 0 ? selectedAtletasIds : filteredAtletas.map((a) => a.id);
       const filters = {
         posicao: selectedPosicoes.length > 0 ? selectedPosicoes.join(", ") : "Todas",
@@ -223,103 +222,9 @@ export default function HomeScreen() {
     return sorted;
   }, [filteredAtletas, sortBy]);
 
-  // Renderizar header com todos os elementos
-  const renderHeader = () => (
+  // Renderizar header da FlatList (SEM o TextInput de busca)
+  const renderHeader = useCallback(() => (
     <View>
-      {/* Header com Logo */}
-      <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
-        <View className="flex-row justify-between items-center mb-4">
-          <View className="flex-row items-center gap-3 flex-1">
-            <Image
-              source={require("@/assets/images/fabiano-scout-logo.png")}
-              style={{ width: 48, height: 48 }}
-              resizeMode="contain"
-            />
-            <View>
-              <Text className="text-2xl font-bold text-primary">Fabiano Scout</Text>
-              <Text className="text-xs text-muted mt-0.5">Análise de Atletas</Text>
-            </View>
-          </View>
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              onPress={handleAddAtleta}
-              className="w-10 h-10 rounded-full bg-primary justify-center items-center"
-            >
-              <IconSymbol name="plus" size={20} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push("/relatorio")}
-              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
-            >
-              <IconSymbol name="doc.text" size={20} color={colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/settings")}
-              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
-            >
-              <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Barra de Busca */}
-        <View className="flex-row gap-2">
-          <View className="flex-1 bg-surface rounded-full px-4 py-3 border border-border flex-row items-center" pointerEvents="box-none">
-            <IconSymbol name="magnifyingglass" size={18} color={colors.muted} />
-            <TextInput
-              placeholder="Buscar atleta..."
-              placeholderTextColor={colors.muted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 ml-2 text-foreground"
-              style={{ color: colors.foreground }}
-              returnKeyType="done"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <IconSymbol name="xmark.circle.fill" size={18} color={colors.muted} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setShowFilters(!showFilters)}
-            style={{
-              backgroundColor: activeFilterCount > 0 ? colors.primary : colors.surface,
-              borderWidth: activeFilterCount > 0 ? 0 : 1,
-              borderColor: colors.border,
-            }}
-            className="rounded-full w-12 h-12 justify-center items-center"
-          >
-            <IconSymbol
-              name="slider.horizontal.3"
-              size={20}
-              color={activeFilterCount > 0 ? "white" : colors.muted}
-            />
-            {activeFilterCount > 0 && (
-              <View
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full justify-center items-center"
-                style={{ backgroundColor: colors.error }}
-              >
-                <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Contador de Resultados */}
-        <View className="flex-row justify-between items-center mt-3">
-          <Text className="text-sm text-muted">
-            {filteredAtletas.length} atleta{filteredAtletas.length !== 1 ? "s" : ""} encontrado{filteredAtletas.length !== 1 ? "s" : ""}
-          </Text>
-          {activeFilterCount > 0 && (
-            <TouchableOpacity onPress={clearFilters}>
-              <Text className="text-sm text-primary font-medium">Limpar filtros</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       {/* Painel de Filtros */}
       {showFilters && (
         <ScrollView className="bg-background border-b border-border" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 12 }} scrollEnabled={true}>
@@ -440,11 +345,108 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  );
+  ), [showFilters, posicoes, selectedPosicoes, selectedIdadeFaixas, clubes, selectedClubes, naturalidades, selectedNaturalidades, pes, selectedPes, sortBy, colors, generatingExcel]);
 
   return (
     <ScreenContainer className="bg-background p-0">
-      {/* Lista de Atletas com Header */}
+      {/* Header FIXO com Logo e Busca — fora da FlatList */}
+      <View className="bg-gradient-to-b from-primary/10 to-background px-4 pt-4 pb-3">
+        <View className="flex-row justify-between items-center mb-4">
+          <View className="flex-row items-center gap-3 flex-1">
+            <Image
+              source={require("@/assets/images/fabiano-scout-logo.png")}
+              style={{ width: 48, height: 48 }}
+              resizeMode="contain"
+            />
+            <View>
+              <Text className="text-2xl font-bold text-primary">Fabiano Scout</Text>
+              <Text className="text-xs text-muted mt-0.5">Análise de Atletas</Text>
+            </View>
+          </View>
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              onPress={handleAddAtleta}
+              className="w-10 h-10 rounded-full bg-primary justify-center items-center"
+            >
+              <IconSymbol name="plus" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/relatorio")}
+              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            >
+              <IconSymbol name="doc.text" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/settings")}
+              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            >
+              <IconSymbol name="gearshape.fill" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Barra de Busca — FIXO, fora da FlatList */}
+        <View className="flex-row gap-2">
+          <View className="flex-1 bg-surface rounded-full px-4 py-3 border border-border flex-row items-center">
+            <IconSymbol name="magnifyingglass" size={18} color={colors.muted} />
+            <TextInput
+              ref={searchInputRef}
+              placeholder="Buscar atleta..."
+              placeholderTextColor={colors.muted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              className="flex-1 ml-2 text-foreground"
+              style={{ color: colors.foreground, outlineStyle: "none" } as any}
+              returnKeyType="done"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <IconSymbol name="xmark.circle.fill" size={18} color={colors.muted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowFilters(!showFilters)}
+            style={{
+              backgroundColor: activeFilterCount > 0 ? colors.primary : colors.surface,
+              borderWidth: activeFilterCount > 0 ? 0 : 1,
+              borderColor: colors.border,
+            }}
+            className="rounded-full w-12 h-12 justify-center items-center"
+          >
+            <IconSymbol
+              name="slider.horizontal.3"
+              size={20}
+              color={activeFilterCount > 0 ? "white" : colors.muted}
+            />
+            {activeFilterCount > 0 && (
+              <View
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full justify-center items-center"
+                style={{ backgroundColor: colors.error }}
+              >
+                <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Contador de Resultados */}
+        <View className="flex-row justify-between items-center mt-3">
+          <Text className="text-sm text-muted">
+            {filteredAtletas.length} atleta{filteredAtletas.length !== 1 ? "s" : ""} encontrado{filteredAtletas.length !== 1 ? "s" : ""}
+          </Text>
+          {activeFilterCount > 0 && (
+            <TouchableOpacity onPress={clearFilters}>
+              <Text className="text-sm text-primary font-medium">Limpar filtros</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Lista de Atletas com Filtros e Ordenação no Header */}
       <FlatList
         ListHeaderComponent={renderHeader}
         data={sortedAtletas}

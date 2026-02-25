@@ -183,3 +183,7 @@
 - [x] Implementar upload de foto funcional na web (input file) e celular (ImagePicker)
 - [x] Criar rota uploadFoto no servidor com base64 + S3 storage
 - [x] Invalidar cache após upload para atualizar galeria e foto do atleta
+
+## Bug: Campo busca perde foco após cada letra
+- [x] Investigar causa raiz (TextInput dentro de ListHeaderComponent da FlatList causa remount)
+- [x] Corrigir: mover header com logo e busca para fora da FlatList como elemento fixo
