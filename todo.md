@@ -195,3 +195,6 @@
 ## Feature: Substituir Naturalidade por Escala na página de Relatório
 - [x] Remover filtro de Naturalidade da página relatorio.tsx
 - [x] Adicionar filtro de Escala com opções: A, B, B-, B+, C, C-, C+, D, D-, D+
+
+## Bug: Campo busca na página relatorio perde foco após cada letra
+- [x] Corrigir TextInput na página relatorio.tsx para manter foco durante digitação

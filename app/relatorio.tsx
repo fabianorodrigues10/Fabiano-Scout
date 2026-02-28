@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -65,8 +65,6 @@ export default function RelatorioScreen() {
     return Array.from(set).sort();
   }, [atletas]);
 
-
-
   // Filtrar atletas
   const filteredAtletas = useMemo(() => {
     return atletas.filter((atleta: any) => {
@@ -102,23 +100,23 @@ export default function RelatorioScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const toggleAtletaSelection = (id: number) => {
+  const toggleAtletaSelection = useCallback((atletaId: number) => {
     setSelectedAtletasIds((prev) =>
-      prev.includes(id) ? prev.filter((aid) => aid !== id) : [...prev, id]
+      prev.includes(atletaId) ? prev.filter((id) => id !== atletaId) : [...prev, atletaId]
     );
-  };
+  }, []);
 
-  const selectAllFiltered = () => {
-    setSelectedAtletasIds(filteredAtletas.map((a) => a.id));
-  };
+  const selectAllFiltered = useCallback(() => {
+    setSelectedAtletasIds(filteredAtletas.map((a: any) => a.id));
+  }, [filteredAtletas]);
 
-  const deselectAll = () => {
+  const deselectAll = useCallback(() => {
     setSelectedAtletasIds([]);
-  };
+  }, []);
 
   const handleGenerateReport = async () => {
     if (selectedAtletasIds.length === 0) {
-      Alert.alert("Aviso", "Marque pelo menos um atleta para gerar o relatório");
+      Alert.alert("Atenção", "Selecione pelo menos um atleta");
       return;
     }
 
@@ -141,7 +139,7 @@ export default function RelatorioScreen() {
 
   const handleGenerateExcel = async () => {
     if (selectedAtletasIds.length === 0) {
-      Alert.alert("Aviso", "Marque pelo menos um atleta para exportar");
+      Alert.alert("Atenção", "Selecione pelo menos um atleta");
       return;
     }
 
@@ -162,10 +160,103 @@ export default function RelatorioScreen() {
     }
   };
 
-  // Renderizar header com todos os elementos
-  const renderHeader = () => (
-    <View>
-      {/* Header */}
+  // Renderizar apenas os filtros (sem TextInput)
+  const renderFilters = () => (
+    <View style={{ padding: 16, gap: 12 }}>
+      {/* Filtro de Posição */}
+      <FilterDropdown
+        title="Posições"
+        options={posicoes}
+        selectedOptions={selectedPosicoes}
+        onToggleOption={(pos) =>
+          setSelectedPosicoes((prev) =>
+            prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+          )
+        }
+      />
+
+      {/* Filtro de Clube */}
+      <FilterDropdown
+        title="Clubes"
+        options={clubes}
+        selectedOptions={selectedClubes}
+        onToggleOption={(clube) =>
+          setSelectedClubes((prev) =>
+            prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
+          )
+        }
+      />
+
+      {/* Filtro de Idade */}
+      <FilterDropdown
+        title="Faixa de Idade"
+        options={FAIXAS_IDADE.map((f) => f.label)}
+        selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
+        onToggleOption={(label) => {
+          const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
+          if (idx !== -1) {
+            setSelectedIdadeFaixas((prev) =>
+              prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+            );
+          }
+        }}
+      />
+
+      {/* Filtro de Escala */}
+      <FilterDropdown
+        title="Escala"
+        options={ESCALAS}
+        selectedOptions={selectedEscalas}
+        onToggleOption={(escala) =>
+          setSelectedEscalas((prev) =>
+            prev.includes(escala) ? prev.filter((e) => e !== escala) : [...prev, escala]
+          )
+        }
+      />
+
+      {/* Botoes de Selecao */}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <TouchableOpacity
+          onPress={selectAllFiltered}
+          style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderRadius: 8,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
+            Selecionar Todos ({selectedAtletasIds.length}/{filteredAtletas.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={deselectAll}
+          style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderRadius: 8,
+            paddingVertical: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
+            Desselecionar
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
+        Atletas ({filteredAtletas.length})
+      </Text>
+    </View>
+  );
+
+  return (
+    <ScreenContainer className="bg-background p-0">
+      {/* Header fixo com voltar */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TouchableOpacity onPress={() => router.back()}>
           <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
@@ -175,9 +266,8 @@ export default function RelatorioScreen() {
         </Text>
       </View>
 
-      {/* Conteúdo dos Filtros */}
-      <View style={{ padding: 16, gap: 12 }}>
-        {/* Busca */}
+      {/* TextInput fixo fora da FlatList */}
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TextInput
           placeholder="Buscar atleta..."
           value={searchQuery}
@@ -192,104 +282,11 @@ export default function RelatorioScreen() {
           }}
           placeholderTextColor={colors.muted}
         />
-
-        {/* Filtro de Posição */}
-        <FilterDropdown
-          title="Posições"
-          options={posicoes}
-          selectedOptions={selectedPosicoes}
-          onToggleOption={(pos) =>
-            setSelectedPosicoes((prev) =>
-              prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
-            )
-          }
-        />
-
-        {/* Filtro de Clube */}
-        <FilterDropdown
-          title="Clubes"
-          options={clubes}
-          selectedOptions={selectedClubes}
-          onToggleOption={(clube) =>
-            setSelectedClubes((prev) =>
-              prev.includes(clube) ? prev.filter((c) => c !== clube) : [...prev, clube]
-            )
-          }
-        />
-
-        {/* Filtro de Idade */}
-        <FilterDropdown
-          title="Faixa de Idade"
-          options={FAIXAS_IDADE.map((f) => f.label)}
-          selectedOptions={selectedIdadeFaixas.map((idx) => FAIXAS_IDADE[idx].label)}
-          onToggleOption={(label) => {
-            const idx = FAIXAS_IDADE.findIndex((f) => f.label === label);
-            if (idx !== -1) {
-              setSelectedIdadeFaixas((prev) =>
-                prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
-              );
-            }
-          }}
-        />
-
-        {/* Filtro de Escala */}
-        <FilterDropdown
-          title="Escala"
-          options={ESCALAS}
-          selectedOptions={selectedEscalas}
-          onToggleOption={(escala) =>
-            setSelectedEscalas((prev) =>
-              prev.includes(escala) ? prev.filter((e) => e !== escala) : [...prev, escala]
-            )
-          }
-        />
-
-        {/* Botoes de Selecao */}
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <TouchableOpacity
-            onPress={selectAllFiltered}
-            style={{
-              flex: 1,
-              backgroundColor: colors.surface,
-              borderRadius: 8,
-              paddingVertical: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
-              Selecionar Todos ({selectedAtletasIds.length}/{filteredAtletas.length})
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={deselectAll}
-            style={{
-              flex: 1,
-              backgroundColor: colors.surface,
-              borderRadius: 8,
-              paddingVertical: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <Text style={{ textAlign: "center", color: colors.foreground, fontWeight: "600", fontSize: 12 }}>
-              Desselecionar
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
-          Atletas ({filteredAtletas.length})
-        </Text>
       </View>
-    </View>
-  );
 
-  return (
-    <ScreenContainer className="bg-background p-0">
-      {/* Lista de Atletas com Header */}
+      {/* Lista de Atletas com Filtros no Header */}
       <FlatList
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderFilters}
         data={filteredAtletas}
         keyExtractor={(item) => item.id.toString()}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
