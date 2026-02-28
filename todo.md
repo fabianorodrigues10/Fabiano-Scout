@@ -198,3 +198,6 @@
 
 ## Bug: Campo busca na página relatorio perde foco após cada letra
 - [x] Corrigir TextInput na página relatorio.tsx para manter foco durante digitação
+
+## Feature: Adicionar botão de voltar na página de relatório
+- [x] Adicionar botão de voltar à página inicial no topo da página relatorio.tsx

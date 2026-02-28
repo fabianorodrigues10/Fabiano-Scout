@@ -257,11 +257,12 @@ export default function RelatorioScreen() {
   return (
     <ScreenContainer className="bg-background p-0">
       {/* Header fixo com voltar */}
-      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6, backgroundColor: colors.surface }}>
+          <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
+          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Voltar</Text>
         </TouchableOpacity>
-        <Text style={{ flex: 1, fontSize: 18, fontWeight: "600", color: colors.foreground, marginLeft: 12 }}>
+        <Text style={{ flex: 1, fontSize: 18, fontWeight: "600", color: colors.foreground }}>
           Gerar Relatório
         </Text>
       </View>
