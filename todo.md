@@ -191,3 +191,7 @@
 ## Bug: Campo "Clube Atual" não está sendo salvo
 - [x] Investigar por que clube atual não persiste após edição
 - [x] Corrigir: passar clubeFormatado para executarCadastro em vez de usar estado clube
+
+## Feature: Substituir Naturalidade por Escala na página de Relatório
+- [x] Remover filtro de Naturalidade da página relatorio.tsx
+- [x] Adicionar filtro de Escala com opções: A, B, B-, B+, C, C-, C+, D, D-, D+

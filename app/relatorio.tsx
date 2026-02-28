@@ -27,6 +27,9 @@ const FAIXAS_IDADE = [
   { label: "26+", min: 26, max: 100 },
 ];
 
+// Opções de escala
+const ESCALAS = ["A", "B", "B-", "B+", "C", "C-", "C+", "D", "D-", "D+"];
+
 export default function RelatorioScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -39,7 +42,7 @@ export default function RelatorioScreen() {
   const [selectedPosicoes, setSelectedPosicoes] = useState<string[]>([]);
   const [selectedClubes, setSelectedClubes] = useState<string[]>([]);
   const [selectedIdadeFaixas, setSelectedIdadeFaixas] = useState<number[]>([]);
-  const [selectedNaturalidades, setSelectedNaturalidades] = useState<string[]>([]);
+  const [selectedEscalas, setSelectedEscalas] = useState<string[]>([]);
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
@@ -62,13 +65,7 @@ export default function RelatorioScreen() {
     return Array.from(set).sort();
   }, [atletas]);
 
-  const naturalidades = useMemo(() => {
-    const set = new Set<string>();
-    atletas.forEach((a: any) => {
-      if (a.naturalidade) set.add(a.naturalidade);
-    });
-    return Array.from(set).sort();
-  }, [atletas]);
+
 
   // Filtrar atletas
   const filteredAtletas = useMemo(() => {
@@ -82,7 +79,7 @@ export default function RelatorioScreen() {
       if (selectedClubes.length > 0 && !selectedClubes.includes(atleta.clube || "")) {
         return false;
       }
-      if (selectedNaturalidades.length > 0 && !selectedNaturalidades.includes(atleta.naturalidade || "")) {
+      if (selectedEscalas.length > 0 && !selectedEscalas.includes(atleta.escala || "")) {
         return false;
       }
       if (selectedIdadeFaixas.length > 0) {
@@ -97,7 +94,7 @@ export default function RelatorioScreen() {
       }
       return true;
     });
-  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedNaturalidades]);
+  }, [atletas, searchQuery, selectedPosicoes, selectedClubes, selectedIdadeFaixas, selectedEscalas]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -235,14 +232,14 @@ export default function RelatorioScreen() {
           }}
         />
 
-        {/* Filtro de Naturalidade */}
+        {/* Filtro de Escala */}
         <FilterDropdown
-          title="Naturalidade"
-          options={naturalidades}
-          selectedOptions={selectedNaturalidades}
-          onToggleOption={(nat) =>
-            setSelectedNaturalidades((prev) =>
-              prev.includes(nat) ? prev.filter((n) => n !== nat) : [...prev, nat]
+          title="Escala"
+          options={ESCALAS}
+          selectedOptions={selectedEscalas}
+          onToggleOption={(escala) =>
+            setSelectedEscalas((prev) =>
+              prev.includes(escala) ? prev.filter((e) => e !== escala) : [...prev, escala]
             )
           }
         />
