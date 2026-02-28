@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -17,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { OgolWebScraper, type OgolPlayerData } from "@/components/ogol-web-scraper";
 import { getApiBaseUrl } from "@/constants/oauth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const POSICOES = [
   "Goleiro",
@@ -56,9 +59,14 @@ export default function AtletaFormScreen() {
   const [naturalidade, setNaturalidade] = useState("");
   const [ogolLoading, setOgolLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [fotoLoading, setFotoLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado para WebView scraper
   const [ogolScrapeUrl, setOgolScrapeUrl] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
   
   // Query para buscar atleta (se editando)
   const { data: atleta, isLoading: loadingAtleta } = trpc.atletas.getById.useQuery(
@@ -450,6 +458,78 @@ export default function AtletaFormScreen() {
     }
   };
   
+   const handleAdicionarFoto = async () => {
+    try {
+      if (Platform.OS === "web") {
+        fileInputRef.current?.click();
+      } else {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+        
+        if (!result.canceled && result.assets[0]) {
+          await uploadarFoto(result.assets[0].uri);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao selecionar foto:", error);
+      Alert.alert("Erro", "Erro ao selecionar foto");
+    }
+  };
+  
+  const uploadarFoto = async (uri: string) => {
+    try {
+      setFotoLoading(true);
+      
+      const base64 = await fetch(uri).then(res => res.blob()).then(blob => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      });
+      
+      const atletaId = isEdit ? Number(id) : null;
+      const result = await fetch(`${getApiBaseUrl()}/api/midias/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ base64, atletaId }),
+      });
+      
+      if (!result.ok) throw new Error("Erro ao fazer upload");
+      
+      const data = await result.json();
+      setFotoUri(data.url);
+      Alert.alert("Sucesso", "Foto adicionada com sucesso");
+      
+      if (atletaId) {
+        queryClient.invalidateQueries({ queryKey: ["atletas", "getById", atletaId] });
+      }
+    } catch (error) {
+      console.error("Erro ao fazer upload:", error);
+      Alert.alert("Erro", "Erro ao fazer upload da foto");
+    } finally {
+      setFotoLoading(false);
+    }
+  };
+  
+  const handleFileChange = (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        await uploadarFoto(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
   const handleExcluir = () => {
     setShowDeleteModal(true);
   };
@@ -836,6 +916,47 @@ export default function AtletaFormScreen() {
             <Text className="text-xs text-muted text-right mt-1">
               {valencia.length}/500
             </Text>
+          </View>
+          
+          {/* Campo de Foto */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-foreground mb-2">
+              Foto do Atleta (opcional)
+            </Text>
+            <TouchableOpacity
+              onPress={handleAdicionarFoto}
+              disabled={fotoLoading}
+              className="rounded-lg border-2 border-dashed border-border p-6 items-center justify-center"
+              style={{
+                backgroundColor: colors.surface,
+                opacity: fotoLoading ? 0.6 : 1,
+              }}
+            >
+              {fotoUri ? (
+                <View className="items-center">
+                  <Image source={{ uri: fotoUri }} style={{ width: 100, height: 100, borderRadius: 8, marginBottom: 8 }} />
+                  <Text className="text-sm text-primary font-semibold">Foto adicionada</Text>
+                  <Text className="text-xs text-muted mt-1">Toque para trocar</Text>
+                </View>
+              ) : fotoLoading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <View className="items-center">
+                  <IconSymbol name="photo.fill" size={32} color={colors.primary} />
+                  <Text className="text-sm text-foreground font-semibold mt-2">Adicionar Foto</Text>
+                  <Text className="text-xs text-muted mt-1">Toque para selecionar</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            {Platform.OS === "web" && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+            )}
           </View>
           
           {/* Botão Salvar */}

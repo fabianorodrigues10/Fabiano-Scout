@@ -201,3 +201,8 @@
 
 ## Feature: Adicionar botão de voltar na página de relatório
 - [x] Adicionar botão de voltar à página inicial no topo da página relatorio.tsx
+
+## Feature: Adicionar upload de foto no cadastro de novo atleta
+- [x] Adicionar campo de upload de foto na página de cadastro
+- [x] Permitir capturar/selecionar foto durante o cadastro (ImagePicker no celular, input file na web)
+- [x] Salvar foto junto com os dados do atleta
