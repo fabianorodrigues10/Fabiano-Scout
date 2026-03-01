@@ -484,7 +484,15 @@ export default function AtletaFormScreen() {
     try {
       setFotoLoading(true);
       
-      const base64 = await fetch(uri).then(res => res.blob()).then(blob => {
+      // Para novo atleta, apenas armazenar a URI localmente
+      if (!isEdit) {
+        setFotoUri(uri);
+        Alert.alert("Sucesso", "Foto selecionada. Será salva ao cadastrar o atleta.");
+        return;
+      }
+      
+      // Converter para base64
+      const base64DataUrl = await fetch(uri).then(res => res.blob()).then(blob => {
         return new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
@@ -493,23 +501,22 @@ export default function AtletaFormScreen() {
         });
       });
       
-      const atletaId = isEdit ? Number(id) : null;
-      const result = await fetch(`${getApiBaseUrl()}/api/midias/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ base64, atletaId }),
+      // Extrair base64 sem o prefixo
+      const base64Data = base64DataUrl.split(',')[1];
+      const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
+      const fileName = `foto-${Date.now()}.jpg`;
+      
+      const atletaId = Number(id);
+      const result = await trpc.midias.uploadFoto.useMutation().mutateAsync({
+        atletaId,
+        fileName,
+        mimeType,
+        base64Data,
       });
       
-      if (!result.ok) throw new Error("Erro ao fazer upload");
-      
-      const data = await result.json();
-      setFotoUri(data.url);
+      setFotoUri(result.url);
       Alert.alert("Sucesso", "Foto adicionada com sucesso");
-      
-      if (atletaId) {
-        queryClient.invalidateQueries({ queryKey: ["atletas", "getById", atletaId] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["atletas", "getById", atletaId] });
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
       Alert.alert("Erro", "Erro ao fazer upload da foto");
@@ -517,6 +524,7 @@ export default function AtletaFormScreen() {
       setFotoLoading(false);
     }
   };
+
   
   const handleFileChange = (e: any) => {
     const file = e.target.files?.[0];

@@ -206,3 +206,7 @@
 - [x] Adicionar campo de upload de foto na página de cadastro
 - [x] Permitir capturar/selecionar foto durante o cadastro (ImagePicker no celular, input file na web)
 - [x] Salvar foto junto com os dados do atleta
+
+## Bug: Upload de foto no cadastro não está funcionando
+- [x] Investigar por que a foto não está sendo carregada
+- [x] Corrigir função uploadarFoto para usar sintaxe correta do tRPC
