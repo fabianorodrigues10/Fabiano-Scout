@@ -448,7 +448,38 @@ export default function AtletaFormScreen() {
         });
         Alert.alert("Sucesso", "Atleta atualizado com sucesso");
       } else {
-        await createMutation.mutateAsync(data);
+        const result = await createMutation.mutateAsync(data);
+        
+        // Se houver foto, fazer upload após criar o atleta
+        if (fotoUri && result.id) {
+          try {
+            const base64DataUrl = fotoUri.startsWith('data:') 
+              ? fotoUri 
+              : await fetch(fotoUri).then(res => res.blob()).then(blob => {
+                  return new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                  });
+                });
+            
+            const base64Data = base64DataUrl.split(',')[1];
+            const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
+            const fileName = `foto-${Date.now()}.jpg`;
+            
+            await trpc.midias.uploadFoto.useMutation().mutateAsync({
+              atletaId: result.id,
+              fileName,
+              mimeType,
+              base64Data,
+            });
+          } catch (error) {
+            console.error("Erro ao fazer upload da foto:", error);
+            // Não falha o cadastro se a foto não for salva
+          }
+        }
+        
         Alert.alert("Sucesso", "Atleta cadastrado com sucesso");
       }
       

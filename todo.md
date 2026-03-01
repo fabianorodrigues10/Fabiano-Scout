@@ -210,3 +210,7 @@
 ## Bug: Upload de foto no cadastro não está funcionando
 - [x] Investigar por que a foto não está sendo carregada
 - [x] Corrigir função uploadarFoto para usar sintaxe correta do tRPC
+
+## Bug: Foto não é salva ao cadastrar novo atleta
+- [x] Investigar por que foto aparece no preview mas não é salva
+- [x] Corrigir para fazer upload da foto junto com o cadastro do atleta
