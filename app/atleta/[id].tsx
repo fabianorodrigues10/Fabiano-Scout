@@ -60,6 +60,8 @@ export default function AtletaFormScreen() {
   const [ogolLoading, setOgolLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fotoUri, setFotoUri] = useState<string | null>(null);
+  const [fotoFileName, setFotoFileName] = useState<string>("");
+  const [fotoMimeType, setFotoMimeType] = useState<string>("");
   const [fotoLoading, setFotoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,6 +80,7 @@ export default function AtletaFormScreen() {
   const createMutation = trpc.atletas.create.useMutation();
   const updateMutation = trpc.atletas.update.useMutation();
   const deleteMutation = trpc.atletas.delete.useMutation();
+  const uploadMutation = trpc.midias.uploadFoto.useMutation();
 
   // Query para listar todos os atletas (para validar duplicatas)
   const { data: todosAtletas = [] } = trpc.atletas.list.useQuery(
@@ -515,30 +518,36 @@ export default function AtletaFormScreen() {
     try {
       setFotoLoading(true);
       
-      // Para novo atleta, apenas armazenar a URI localmente
-      if (!isEdit) {
-        setFotoUri(uri);
-        Alert.alert("Sucesso", "Foto selecionada. Será salva ao cadastrar o atleta.");
-        return;
-      }
-      
       // Converter para base64
-      const base64DataUrl = await fetch(uri).then(res => res.blob()).then(blob => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
+      let base64DataUrl = uri;
+      if (!uri.startsWith('data:')) {
+        base64DataUrl = await fetch(uri).then(res => res.blob()).then(blob => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
         });
-      });
+      }
       
       // Extrair base64 sem o prefixo
       const base64Data = base64DataUrl.split(',')[1];
       const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
       const fileName = `foto-${Date.now()}.jpg`;
       
+      // Para novo atleta, apenas armazenar os dados localmente
+      if (!isEdit) {
+        setFotoUri(base64DataUrl);
+        setFotoFileName(fileName);
+        setFotoMimeType(mimeType);
+        Alert.alert("Sucesso", "Foto selecionada. Será salva ao cadastrar o atleta.");
+        return;
+      }
+      
+      // Para atleta existente, fazer upload imediatamente
       const atletaId = Number(id);
-      const result = await trpc.midias.uploadFoto.useMutation().mutateAsync({
+      const result = await uploadMutation.mutateAsync({
         atletaId,
         fileName,
         mimeType,
@@ -547,7 +556,6 @@ export default function AtletaFormScreen() {
       
       setFotoUri(result.url);
       Alert.alert("Sucesso", "Foto adicionada com sucesso");
-      queryClient.invalidateQueries({ queryKey: ["atletas", "getById", atletaId] });
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
       Alert.alert("Erro", "Erro ao fazer upload da foto");

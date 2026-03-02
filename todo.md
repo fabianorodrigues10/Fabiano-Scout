@@ -214,3 +214,8 @@
 ## Bug: Foto não é salva ao cadastrar novo atleta
 - [x] Investigar por que foto aparece no preview mas não é salva
 - [x] Corrigir para fazer upload da foto junto com o cadastro do atleta
+
+## Bug: Fotos não aparecem em nenhuma página após upload
+- [x] Investigar por que fotos não são exibidas
+- [x] Verificar se URLs do S3 estão sendo retornadas corretamente
+- [x] Refatorar função uploadarFoto para armazenar base64 completo para novo atleta
