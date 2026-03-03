@@ -219,3 +219,8 @@
 - [x] Investigar por que fotos não são exibidas
 - [x] Verificar se URLs do S3 estão sendo retornadas corretamente
 - [x] Refatorar função uploadarFoto para armazenar base64 completo para novo atleta
+
+## Feature: Adicionar espaço para vídeos do YouTube
+- [x] Adicionar campo de vídeos na página de edição do atleta
+- [ ] Exibir vídeos na página individual do atleta
+- [ ] Incluir vídeos no relatório gerado

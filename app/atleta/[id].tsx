@@ -57,6 +57,7 @@ export default function AtletaFormScreen() {
   const [escala, setEscala] = useState("");
   const [valencia, setValencia] = useState("");
   const [naturalidade, setNaturalidade] = useState("");
+  const [videoLinks, setVideoLinks] = useState<string[]>([]);
   const [ogolLoading, setOgolLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fotoUri, setFotoUri] = useState<string | null>(null);
@@ -395,6 +396,17 @@ export default function AtletaFormScreen() {
     
     executarCadastro(clubeFormatado);
   };
+
+  const handleAdicionarVideo = () => {
+    const url = prompt("Cole o link do YouTube:");
+    if (url && url.trim()) {
+      setVideoLinks([...videoLinks, url.trim()]);
+    }
+  };
+
+  const handleRemoverVideo = (index: number) => {
+    setVideoLinks(videoLinks.filter((_, i) => i !== index));
+  };
   
   const executarCadastro = async (clubeFormatado?: string) => {
     
@@ -468,6 +480,7 @@ export default function AtletaFormScreen() {
                 });
             
             const base64Data = base64DataUrl.split(',')[1];
+  const [videoLinks, setVideoLinks] = useState<string[]>([]);
             const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
             const fileName = `foto-${Date.now()}.jpg`;
             
@@ -1003,6 +1016,42 @@ export default function AtletaFormScreen() {
                 onChange={handleFileChange}
                 style={{ display: "none" }}
               />
+            )}
+          </View>
+          
+          {/* Seção de Vídeos */}
+          <View className="mb-6">
+            <Text className="text-lg font-bold text-foreground mb-3">Vídeos do YouTube</Text>
+            
+            {/* Botão para adicionar vídeo */}
+            <TouchableOpacity
+              onPress={handleAdicionarVideo}
+              className="border-2 border-dashed border-primary rounded-lg p-4 items-center mb-4"
+            >
+              <Text className="text-primary font-semibold">+ Adicionar Vídeo</Text>
+              <Text className="text-xs text-muted mt-1">Cole o link do YouTube</Text>
+            </TouchableOpacity>
+            
+            {/* Lista de vídeos adicionados */}
+            {videoLinks.length > 0 && (
+              <View className="space-y-2">
+                {videoLinks.map((url, index) => (
+                  <View key={index} className="flex-row items-center bg-surface rounded-lg p-3 mb-2">
+                    <View className="flex-1">
+                      <Text className="text-sm text-foreground font-semibold truncate">
+                        Vídeo {index + 1}
+                      </Text>
+                      <Text className="text-xs text-muted truncate">{url}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleRemoverVideo(index)}
+                      className="ml-2 p-2"
+                    >
+                      <Text className="text-error font-bold">X</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
           
