@@ -224,3 +224,7 @@
 - [x] Adicionar campo de vídeos na página de edição do atleta
 - [ ] Exibir vídeos na página individual do atleta
 - [ ] Incluir vídeos no relatório gerado
+
+## Bug: Links de vídeos do YouTube não aparecem no relatório
+- [x] Investigar por que vídeos não são incluídos no relatório gerado
+- [x] Corrigir função de geração de relatório para incluir vídeos

@@ -9,6 +9,7 @@ interface AtletaParaPDF {
   altura?: string | null;
   clube?: string | null;
   valencia?: string | null;
+  videos?: string[] | null;
 }
 
 interface EstatisticasPDF {
@@ -95,6 +96,7 @@ export async function gerarRelatorioPDF(
       const col5 = 300;
       const col6 = 350;
       const col7 = 420;
+      const col8 = 500;
       const rowHeight = 20;
 
       doc.fontSize(9).font("Helvetica-Bold");
@@ -105,6 +107,7 @@ export async function gerarRelatorioPDF(
       doc.text("2ª Posição", col5, tableTop);
       doc.text("Clube", col6, tableTop);
       doc.text("Valência", col7, tableTop);
+      doc.text("Vídeos", col8, tableTop);
 
       // Linha separadora
       doc.moveTo(col1, tableTop + 15).lineTo(550, tableTop + 15).stroke();
@@ -127,6 +130,8 @@ export async function gerarRelatorioPDF(
         doc.text(atleta.segundaPosicao || "-", col5, currentY);
         doc.text(atleta.clube?.substring(0, 15) || "-", col6, currentY);
         doc.text(atleta.valencia?.substring(0, 30) || "-", col7, currentY);
+        const videosText = atleta.videos && atleta.videos.length > 0 ? atleta.videos.length.toString() : "-";
+        doc.text(videosText, col8, currentY);
 
         currentY += rowHeight;
       });

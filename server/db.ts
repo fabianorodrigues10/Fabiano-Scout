@@ -121,7 +121,7 @@ export async function getAtletas(userId: number) {
     .where(eq(atletas.userId, userId))
     .orderBy(desc(atletas.createdAt));
   
-  // Buscar fotos para cada atleta
+  // Buscar fotos e vídeos para cada atleta
   if (result.length > 0) {
     const { midias } = await import("../drizzle/schema");
     const atletasIds = result.map(a => a.id);
@@ -135,6 +135,15 @@ export async function getAtletas(userId: number) {
       ))
       .orderBy(desc(midias.createdAt));
     
+    const videos = await db
+      .select()
+      .from(midias)
+      .where(and(
+        inArray(midias.atletaId, atletasIds),
+        eq(midias.tipo, "video")
+      ))
+      .orderBy(desc(midias.createdAt));
+    
     // Criar mapa de fotos por atletaId
     const fotoMap = new Map();
     fotos.forEach(foto => {
@@ -143,10 +152,22 @@ export async function getAtletas(userId: number) {
       }
     });
     
-    // Adicionar foto a cada atleta
+    // Criar mapa de vídeos por atletaId
+    const videoMap = new Map();
+    videos.forEach(video => {
+      if (video.atletaId) {
+        if (!videoMap.has(video.atletaId)) {
+          videoMap.set(video.atletaId, []);
+        }
+        videoMap.get(video.atletaId).push(video.url);
+      }
+    });
+    
+    // Adicionar foto e vídeos a cada atleta
     return result.map(atleta => ({
       ...atleta,
-      fotoUrl: fotoMap.get(atleta.id) || null
+      fotoUrl: fotoMap.get(atleta.id) || null,
+      videos: videoMap.get(atleta.id) || []
     }));
   }
   
