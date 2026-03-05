@@ -230,3 +230,7 @@
 - [x] Corrigir função de geração de relatório para incluir vídeos
 - [x] Adicionar código para salvar vídeos ao criar/editar atleta
 - [x] Testar salvamento e recuperação de vídeos (testes passando)
+- [x] Adicionar busca de vídeos na função getAtletaById
+- [x] Carregar vídeos ao editar atleta existente
+- [x] Substituir prompt() por modal funcional para adicionar vídeos
+- [x] Modal funciona na web e no app (Expo)

@@ -58,6 +58,8 @@ export default function AtletaFormScreen() {
   const [valencia, setValencia] = useState("");
   const [naturalidade, setNaturalidade] = useState("");
   const [videoLinks, setVideoLinks] = useState<string[]>([]);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoInputValue, setVideoInputValue] = useState("");
   const [ogolLoading, setOgolLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fotoUri, setFotoUri] = useState<string | null>(null);
@@ -121,6 +123,10 @@ export default function AtletaFormScreen() {
       setEscala(atleta.escala || "");
       setValencia(atleta.valencia || "");
       setNaturalidade(atleta.naturalidade || "");
+      // Carregar vídeos se existirem
+      if (atleta.videos && Array.isArray(atleta.videos)) {
+        setVideoLinks(atleta.videos);
+      }
     }
   }, [atleta]);
   
@@ -399,10 +405,23 @@ export default function AtletaFormScreen() {
   };
 
   const handleAdicionarVideo = () => {
-    const url = prompt("Cole o link do YouTube:");
-    if (url && url.trim()) {
-      setVideoLinks([...videoLinks, url.trim()]);
+    setShowVideoModal(true);
+    setVideoInputValue("");
+  };
+  
+  const handleConfirmarVideo = () => {
+    if (videoInputValue.trim()) {
+      setVideoLinks([...videoLinks, videoInputValue.trim()]);
+      setVideoInputValue("");
+      setShowVideoModal(false);
+    } else {
+      Alert.alert("Erro", "Cole um link válido do YouTube");
     }
+  };
+  
+  const handleCancelarVideo = () => {
+    setVideoInputValue("");
+    setShowVideoModal(false);
   };
 
   const handleRemoverVideo = (index: number) => {
@@ -1121,6 +1140,44 @@ export default function AtletaFormScreen() {
           <View className="h-8" />
         </ScrollView>
       </View>
+      
+      {/* Modal de adição de vídeo */}
+      {showVideoModal && (
+        <View className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <View className="bg-background rounded-2xl p-6 w-4/5 max-w-sm">
+            <Text className="text-xl font-bold text-foreground mb-4">
+              Adicionar Vídeo do YouTube
+            </Text>
+            
+            <TextInput
+              placeholder="Cole o link do YouTube aqui..."
+              placeholderTextColor={colors.muted}
+              value={videoInputValue}
+              onChangeText={setVideoInputValue}
+              className="border border-border rounded-lg p-3 mb-4 text-foreground"
+              style={{ color: colors.foreground }}
+              multiline
+            />
+            
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCancelarVideo}
+                className="flex-1 py-3 rounded-lg border border-border items-center"
+              >
+                <Text className="font-semibold text-foreground">Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={handleConfirmarVideo}
+                className="flex-1 py-3 rounded-lg items-center"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <Text className="font-semibold text-white">Adicionar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
       
       {/* Modal de confirmação de exclusão */}
       {showDeleteModal && (
