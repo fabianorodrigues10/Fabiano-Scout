@@ -6,7 +6,7 @@ import PDFDocument from "pdfkit";
 import { Request, Response } from "express";
 import { getDb } from "./db";
 import { atletas, midias } from "../drizzle/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 
 // Cores
 type RGB = [number, number, number];
@@ -287,7 +287,10 @@ export function registerPdfRoutes(app: any) {
         
         // Buscar vídeos para cada atleta
         const videosData = await db.select().from(midias).where(
-          inArray(midias.atletaId, ids)
+          and(
+            inArray(midias.atletaId, ids),
+            eq(midias.tipo, 'video')
+          )
         );
         
         // Criar mapa de vídeos por atletaId
