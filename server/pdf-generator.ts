@@ -9,6 +9,7 @@ interface AtletaParaPDF {
   altura?: string | null;
   clube?: string | null;
   valencia?: string | null;
+  link?: string | null;
   videos?: string[] | null;
 }
 
@@ -83,57 +84,55 @@ export async function gerarRelatorioPDF(
 
       doc.moveDown(1);
 
-      // Tabela de Atletas
-      doc.fontSize(12).font("Helvetica-Bold").text("Atletas");
-      doc.moveDown(0.3);
+      // Seção de Fichas Individuais dos Atletas
+      doc.fontSize(12).font("Helvetica-Bold").text("Fichas dos Atletas");
+      doc.moveDown(0.5);
 
-      // Cabeçalho da tabela
-      const tableTop = doc.y;
-      const col1 = 40;
-      const col2 = 150;
-      const col3 = 200;
-      const col4 = 250;
-      const col5 = 300;
-      const col6 = 350;
-      const col7 = 420;
-      const col8 = 500;
-      const rowHeight = 20;
-
-      doc.fontSize(9).font("Helvetica-Bold");
-      doc.text("Nome", col1, tableTop);
-      doc.text("Posição", col2, tableTop);
-      doc.text("Idade", col3, tableTop);
-      doc.text("Altura", col4, tableTop);
-      doc.text("2ª Posição", col5, tableTop);
-      doc.text("Clube", col6, tableTop);
-      doc.text("Valência", col7, tableTop);
-      doc.text("Vídeos", col8, tableTop);
-
-      // Linha separadora
-      doc.moveTo(col1, tableTop + 15).lineTo(550, tableTop + 15).stroke();
-
-      // Dados dos atletas
-      let currentY = tableTop + 25;
-      doc.fontSize(8).font("Helvetica");
-
-      atletas.forEach((atleta) => {
+      atletas.forEach((atleta, index) => {
         // Verificar se precisa de nova página
-        if (currentY > 750) {
+        if (doc.y > 700) {
           doc.addPage();
-          currentY = 40;
         }
 
-        doc.text(atleta.nome.substring(0, 20), col1, currentY);
-        doc.text(atleta.posicao || "-", col2, currentY);
-        doc.text(atleta.idade?.toString() || "-", col3, currentY);
-        doc.text(atleta.altura || "-", col4, currentY);
-        doc.text(atleta.segundaPosicao || "-", col5, currentY);
-        doc.text(atleta.clube?.substring(0, 15) || "-", col6, currentY);
-        doc.text(atleta.valencia?.substring(0, 30) || "-", col7, currentY);
-        const videosText = atleta.videos && atleta.videos.length > 0 ? atleta.videos.length.toString() : "-";
-        doc.text(videosText, col8, currentY);
+        // Cabeçalho da ficha
+        doc.fontSize(11).font("Helvetica-Bold").text(`${index + 1}. ${atleta.nome}`);
+        
+        // Links (Ogol e YouTube)
+        const linksText: string[] = [];
+        if (atleta.link) {
+          linksText.push(`Ogol: ${atleta.link}`);
+        }
+        if (atleta.videos && atleta.videos.length > 0) {
+          atleta.videos.forEach((video, idx) => {
+            linksText.push(`YouTube ${idx + 1}: ${video}`);
+          });
+        }
+        
+        if (linksText.length > 0) {
+          doc.fontSize(8).font("Helvetica").fillColor("#0066cc");
+          linksText.forEach(link => {
+            doc.text(link, { underline: true });
+          });
+          doc.fillColor("#000000");
+        }
 
-        currentY += rowHeight;
+        // Dados do atleta
+        doc.fontSize(9).font("Helvetica");
+        const dados = [
+          [`Posição: ${atleta.posicao || "-"}`, `Idade: ${atleta.idade || "-"}`],
+          [`Altura: ${atleta.altura || "-"}`, `2ª Posição: ${atleta.segundaPosicao || "-"}`],
+          [`Clube: ${atleta.clube || "-"}`, `Valência: ${atleta.valencia || "-"}`],
+        ];
+
+        dados.forEach(([col1, col2]) => {
+          doc.text(col1, 40, doc.y, { width: 250, continued: true });
+          doc.text(col2, 300, doc.y - doc.currentLineHeight());
+          doc.moveDown(1);
+        });
+
+        doc.moveDown(0.5);
+        doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(0.5);
       });
 
       // Rodapé
