@@ -223,14 +223,12 @@
 ## Feature: Adicionar espaço para vídeos do YouTube
 - [x] Adicionar campo de vídeos na página de edição do atleta
 - [ ] Exibir vídeos na página individual do atleta
-- [x] Incluir vídeos no relatório gerado
+- [ ] Incluir vídeos no relatório gerado
 
 ## Bug: Links de vídeos do YouTube não aparecem no relatório
 - [x] Investigar por que vídeos não são incluídos no relatório gerado
 - [x] Corrigir função de geração de relatório para incluir vídeos
-- [x] Adicionar código para salvar vídeos ao criar/editar atleta
-- [x] Testar salvamento e recuperação de vídeos (testes passando)
-- [x] Adicionar busca de vídeos na função getAtletaById
-- [x] Carregar vídeos ao editar atleta existente
-- [x] Substituir prompt() por modal funcional para adicionar vídeos
-- [x] Modal funciona na web e no app (Expo)
+- [x] Corrigir erro de prompt() que não funciona no React Native
+- [x] Implementar modal para adicionar vídeos
+- [x] Adicionar links de vídeos no PDF relatório
+- [x] Adicionar logs de debug para rastrear salvamento de vídeos

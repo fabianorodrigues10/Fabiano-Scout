@@ -9,7 +9,6 @@ interface AtletaParaPDF {
   altura?: string | null;
   clube?: string | null;
   valencia?: string | null;
-  link?: string | null;
   videos?: string[] | null;
 }
 
@@ -49,18 +48,25 @@ export async function gerarRelatorioPDF(
       doc.moveDown(0.5);
 
       // Data
-      doc.fontSize(10).font("Helvetica").text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, {
-        align: "center",
-      });
+      const data = new Date().toLocaleDateString("pt-BR");
+      doc.fontSize(10).font("Helvetica").text(`Gerado em: ${data}`, { align: "center" });
       doc.moveDown(1);
 
-      // Estatísticas
-      doc.fontSize(12).font("Helvetica-Bold").text("Estatísticas Gerais");
+      // Seção de Estatísticas
+      doc.fontSize(14).font("Helvetica-Bold").text("Estatísticas Gerais");
       doc.moveDown(0.3);
-      doc.fontSize(9).font("Helvetica");
-      doc.text(`Total de Atletas: ${stats.totalAtletas}`);
-      doc.text(`Idade Média: ${stats.idadeMedia.toFixed(1)} anos`);
-      doc.text(`Altura Média: ${stats.alturaMedia}`);
+
+      const stats_data = [
+        ["Total de Atletas", stats.totalAtletas.toString()],
+        ["Idade Média", `${stats.idadeMedia} anos`],
+        ["Altura Média", `${stats.alturaMedia} m`],
+      ];
+
+      doc.fontSize(10).font("Helvetica");
+      stats_data.forEach(([label, value]) => {
+        doc.text(`${label}: ${value}`);
+      });
+
       doc.moveDown(1);
 
       // Seção de Posições
@@ -112,7 +118,7 @@ export async function gerarRelatorioPDF(
 
       atletas.forEach((atleta) => {
         // Verificar se precisa de nova página
-        if (currentY > 680) {
+        if (currentY > 750) {
           doc.addPage();
           currentY = 40;
         }
@@ -128,30 +134,6 @@ export async function gerarRelatorioPDF(
         doc.text(videosText, col8, currentY);
 
         currentY += rowHeight;
-        
-        // Linha de links (Ogol e YouTube)
-        if (atleta.link || (atleta.videos && atleta.videos.length > 0)) {
-          doc.fontSize(7).font("Helvetica");
-          
-          // Link Ogol
-          if (atleta.link) {
-            const ogolDisplay = atleta.link.length > 50 ? atleta.link.substring(0, 47) + "..." : atleta.link;
-            doc.text(`Ogol: ${ogolDisplay}`, col1, currentY);
-            currentY += 10;
-          }
-          
-          // Links de Vídeos
-          if (atleta.videos && atleta.videos.length > 0) {
-            atleta.videos.forEach((videoUrl, index) => {
-              const videoDisplay = videoUrl.length > 50 ? videoUrl.substring(0, 47) + "..." : videoUrl;
-              doc.text(`YouTube ${index + 1}: ${videoDisplay}`, col1, currentY);
-              currentY += 10;
-            });
-          }
-          
-          currentY += 3;
-          doc.fontSize(8);
-        }
       });
 
       // Rodapé

@@ -84,7 +84,6 @@ export default function AtletaFormScreen() {
   const updateMutation = trpc.atletas.update.useMutation();
   const deleteMutation = trpc.atletas.delete.useMutation();
   const uploadMutation = trpc.midias.uploadFoto.useMutation();
-  const createVideoMutation = trpc.midias.create.useMutation();
 
   // Query para listar todos os atletas (para validar duplicatas)
   const { data: todosAtletas = [] } = trpc.atletas.list.useQuery(
@@ -123,10 +122,6 @@ export default function AtletaFormScreen() {
       setEscala(atleta.escala || "");
       setValencia(atleta.valencia || "");
       setNaturalidade(atleta.naturalidade || "");
-      // Carregar vídeos se existirem
-      if (atleta.videos && Array.isArray(atleta.videos)) {
-        setVideoLinks(atleta.videos);
-      }
     }
   }, [atleta]);
   
@@ -477,33 +472,10 @@ export default function AtletaFormScreen() {
       };
       
       if (isEdit) {
-        const atletaId = Number(id);
         await updateMutation.mutateAsync({
-          id: atletaId,
+          id: Number(id),
           ...data,
         });
-        
-        // Salvar vídeos após atualizar o atleta
-        if (videoLinks && videoLinks.length > 0) {
-          try {
-            for (const videoUrl of videoLinks) {
-              if (videoUrl.trim()) {
-                await createVideoMutation.mutateAsync({
-                  atletaId,
-                  tipo: 'video',
-                  nome: `Vídeo - ${new Date().toLocaleString()}`,
-                  url: videoUrl.trim(),
-                  s3Key: `videos/${atletaId}/${Date.now()}-${Math.random().toString(36).substring(7)}`,
-                  descricao: 'Vídeo do YouTube',
-                });
-              }
-            }
-          } catch (error) {
-            console.error("Erro ao salvar vídeos:", error);
-            // Não falha a atualização se os vídeos não forem salvos
-          }
-        }
-        
         Alert.alert("Sucesso", "Atleta atualizado com sucesso");
       } else {
         const result = await createMutation.mutateAsync(data);
@@ -523,6 +495,7 @@ export default function AtletaFormScreen() {
                 });
             
             const base64Data = base64DataUrl.split(',')[1];
+  const [videoLinks, setVideoLinks] = useState<string[]>([]);
             const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
             const fileName = `foto-${Date.now()}.jpg`;
             
@@ -535,27 +508,6 @@ export default function AtletaFormScreen() {
           } catch (error) {
             console.error("Erro ao fazer upload da foto:", error);
             // Não falha o cadastro se a foto não for salva
-          }
-        }
-        
-        // Salvar vídeos após criar o atleta
-        if (videoLinks && videoLinks.length > 0 && result.id) {
-          try {
-            for (const videoUrl of videoLinks) {
-              if (videoUrl.trim()) {
-                await createVideoMutation.mutateAsync({
-                  atletaId: result.id,
-                  tipo: 'video',
-                  nome: `Vídeo - ${new Date().toLocaleString()}`,
-                  url: videoUrl.trim(),
-                  s3Key: `videos/${result.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`,
-                  descricao: 'Vídeo do YouTube',
-                });
-              }
-            }
-          } catch (error) {
-            console.error("Erro ao salvar vídeos:", error);
-            // Não falha o cadastro se os vídeos não forem salvos
           }
         }
         
@@ -1140,44 +1092,6 @@ export default function AtletaFormScreen() {
           <View className="h-8" />
         </ScrollView>
       </View>
-      
-      {/* Modal de adição de vídeo */}
-      {showVideoModal && (
-        <View className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <View className="bg-background rounded-2xl p-6 w-4/5 max-w-sm">
-            <Text className="text-xl font-bold text-foreground mb-4">
-              Adicionar Vídeo do YouTube
-            </Text>
-            
-            <TextInput
-              placeholder="Cole o link do YouTube aqui..."
-              placeholderTextColor={colors.muted}
-              value={videoInputValue}
-              onChangeText={setVideoInputValue}
-              className="border border-border rounded-lg p-3 mb-4 text-foreground"
-              style={{ color: colors.foreground }}
-              multiline
-            />
-            
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                onPress={handleCancelarVideo}
-                className="flex-1 py-3 rounded-lg border border-border items-center"
-              >
-                <Text className="font-semibold text-foreground">Cancelar</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={handleConfirmarVideo}
-                className="flex-1 py-3 rounded-lg items-center"
-                style={{ backgroundColor: colors.primary }}
-              >
-                <Text className="font-semibold text-white">Adicionar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
       
       {/* Modal de confirmação de exclusão */}
       {showDeleteModal && (
