@@ -1093,6 +1093,44 @@ export default function AtletaFormScreen() {
         </ScrollView>
       </View>
       
+      {/* Modal de adição de vídeo */}
+      {showVideoModal && (
+        <View className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <View className="bg-background rounded-2xl p-6 w-4/5 max-w-sm">
+            <Text className="text-xl font-bold text-foreground mb-4">
+              Adicionar Vídeo do YouTube
+            </Text>
+            
+            <TextInput
+              placeholder="Cole o link do YouTube aqui..."
+              placeholderTextColor={colors.muted}
+              value={videoInputValue}
+              onChangeText={setVideoInputValue}
+              className="border border-border rounded-lg p-3 mb-4 text-foreground"
+              style={{ color: colors.foreground }}
+              multiline
+            />
+            
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCancelarVideo}
+                className="flex-1 py-3 rounded-lg border border-border items-center"
+              >
+                <Text className="font-semibold text-foreground">Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={handleConfirmarVideo}
+                className="flex-1 py-3 rounded-lg items-center"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <Text className="font-semibold text-white">Adicionar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+      
       {/* Modal de confirmação de exclusão */}
       {showDeleteModal && (
         <View className="absolute inset-0 bg-black/50 flex items-center justify-center">
