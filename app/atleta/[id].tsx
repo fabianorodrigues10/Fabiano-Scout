@@ -84,6 +84,7 @@ export default function AtletaFormScreen() {
   const updateMutation = trpc.atletas.update.useMutation();
   const deleteMutation = trpc.atletas.delete.useMutation();
   const uploadMutation = trpc.midias.uploadFoto.useMutation();
+  const createVideoMutation = trpc.midias.create.useMutation();
 
   // Query para listar todos os atletas (para validar duplicatas)
   const { data: todosAtletas = [] } = trpc.atletas.list.useQuery(
@@ -495,7 +496,6 @@ export default function AtletaFormScreen() {
                 });
             
             const base64Data = base64DataUrl.split(',')[1];
-  const [videoLinks, setVideoLinks] = useState<string[]>([]);
             const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
             const fileName = `foto-${Date.now()}.jpg`;
             
@@ -509,6 +509,33 @@ export default function AtletaFormScreen() {
             console.error("Erro ao fazer upload da foto:", error);
             // Não falha o cadastro se a foto não for salva
           }
+        }
+        
+        // Salvar vídeos após criar o atleta
+        if (videoLinks && videoLinks.length > 0 && result.id) {
+          console.log("[DEBUG] Iniciando salvamento de vídeos:", videoLinks);
+          try {
+            for (const videoUrl of videoLinks) {
+              if (videoUrl.trim()) {
+                console.log("[DEBUG] Salvando vídeo:", videoUrl);
+                const videoResult = await createVideoMutation.mutateAsync({
+                  atletaId: result.id,
+                  tipo: 'video',
+                  nome: `Vídeo - ${new Date().toLocaleString()}`,
+                  url: videoUrl.trim(),
+                  s3Key: `videos/${result.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                  descricao: 'Vídeo do YouTube',
+                });
+                console.log("[DEBUG] Vídeo salvo com sucesso:", videoResult);
+              }
+            }
+            console.log("[DEBUG] Todos os vídeos salvos com sucesso");
+          } catch (error) {
+            console.error("[DEBUG] Erro ao salvar vídeos:", error);
+            Alert.alert("Aviso", `Erro ao salvar vídeos: ${error}`);
+          }
+        } else {
+          console.log("[DEBUG] Nenhum vídeo para salvar. videoLinks:", videoLinks, "result.id:", result.id);
         }
         
         Alert.alert("Sucesso", "Atleta cadastrado com sucesso");
