@@ -5,7 +5,7 @@
 import PDFDocument from "pdfkit";
 import { Request, Response } from "express";
 import { getDb } from "./db";
-import { atletas } from "../drizzle/schema";
+import { atletas, midias } from "../drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 
 // Cores
@@ -219,14 +219,25 @@ function drawCards(doc: PDFKit.PDFDocument, data: any[], startY: number) {
     if (a.escala) infoParts.push(`Escala: ${a.escala}`);
     doc.fontSize(8).fillColor(GRAY).font("Helvetica").text(infoParts.join("  •  "), 50, y + 36, { width: 500 });
 
-    // Link
+    // Links (Ogol e YouTube)
+    let linkY = y + 49;
     if (a.link) {
       const linkDisplay = a.link.length > 70 ? a.link.substring(0, 70) + "..." : a.link;
-      doc.fontSize(8).fillColor([10, 126, 164] as RGB).text(linkDisplay, 50, y + 49, { link: a.link, width: 500 });
+      doc.fontSize(8).fillColor([10, 126, 164] as RGB).text(linkDisplay, 50, linkY, { link: a.link, width: 500 });
+      linkY += 13;
+    }
+    
+    // Videos do YouTube
+    if (a.videos && Array.isArray(a.videos) && a.videos.length > 0) {
+      a.videos.forEach((video: string, idx: number) => {
+        const videoDisplay = video.length > 70 ? video.substring(0, 70) + "..." : video;
+        doc.fontSize(8).fillColor([10, 126, 164] as RGB).text(videoDisplay, 50, linkY, { link: video, width: 500 });
+        linkY += 13;
+      });
     }
 
-    // Valências
-    const valY = a.link ? y + 62 : y + 49;
+    // Valencias
+    const valY = linkY;
     if (a.valencia) {
       doc.fontSize(8).fillColor(GRAY).font("Helvetica-Bold").text("Valências: ", 50, valY, { continued: true });
       doc.font("Helvetica").text(a.valencia, { width: 490 });
@@ -271,7 +282,30 @@ export function registerPdfRoutes(app: any) {
 
       let data: any[];
       if (ids && ids.length > 0) {
-        data = await db.select().from(atletas).where(inArray(atletas.id, ids));
+        // Buscar atletas
+        const atletasData = await db.select().from(atletas).where(inArray(atletas.id, ids));
+        
+        // Buscar vídeos para cada atleta
+        const videosData = await db.select().from(midias).where(
+          inArray(midias.atletaId, ids)
+        );
+        
+        // Criar mapa de vídeos por atletaId
+        const videoMap = new Map<number, string[]>();
+        videosData.forEach((video: any) => {
+          if (video.atletaId && video.tipo === 'video' && video.url) {
+            if (!videoMap.has(video.atletaId)) {
+              videoMap.set(video.atletaId, []);
+            }
+            videoMap.get(video.atletaId)!.push(video.url);
+          }
+        });
+        
+        // Adicionar vídeos aos atletas
+        data = atletasData.map((a: any) => ({
+          ...a,
+          videos: videoMap.get(a.id) || []
+        }));
       } else {
         // Se nenhum ID foi fornecido, retornar vazio
         data = [];
