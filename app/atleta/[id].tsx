@@ -123,6 +123,13 @@ export default function AtletaFormScreen() {
       setEscala(atleta.escala || "");
       setValencia(atleta.valencia || "");
       setNaturalidade(atleta.naturalidade || "");
+      // Carregar vídeos do atleta
+      const videos = (atleta as any).videos;
+      if (videos && videos.length > 0) {
+        setVideoLinks(videos);
+      } else {
+        setVideoLinks([]);
+      }
     }
   }, [atleta]);
   
@@ -518,14 +525,18 @@ export default function AtletaFormScreen() {
             for (const videoUrl of videoLinks) {
               if (videoUrl.trim()) {
                 console.log("[DEBUG] Salvando vídeo:", videoUrl);
-                const videoResult = await createVideoMutation.mutateAsync({
+                const videoPayload = {
                   atletaId: result.id,
-                  tipo: 'video',
+                  tipo: 'video' as const,
                   nome: `Vídeo - ${new Date().toLocaleString()}`,
                   url: videoUrl.trim(),
                   s3Key: `videos/${result.id}/${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                  mimeType: 'video/youtube',
+                  tamanho: 0,
                   descricao: 'Vídeo do YouTube',
-                });
+                };
+                console.log('[DEBUG] Payload do vídeo:', videoPayload);
+                const videoResult = await createVideoMutation.mutateAsync(videoPayload);
                 console.log("[DEBUG] Vídeo salvo com sucesso:", videoResult);
               }
             }

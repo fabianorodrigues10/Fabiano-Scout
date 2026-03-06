@@ -202,9 +202,20 @@ export async function getAtletaById(id: number, userId: number) {
     .orderBy(desc(midias.createdAt))
     .limit(1);
   
+  // Buscar vídeos do atleta
+  const videosData = await db
+    .select()
+    .from(midias)
+    .where(and(
+      eq(midias.atletaId, id),
+      eq(midias.tipo, "video")
+    ))
+    .orderBy(desc(midias.createdAt));
+  
   return {
     ...atleta,
-    fotoUrl: fotos[0]?.url || null
+    fotoUrl: fotos[0]?.url || null,
+    videos: videosData.map((v: any) => v.url)
   };
 }
 
