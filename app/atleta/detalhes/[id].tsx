@@ -303,6 +303,33 @@ export default function AtletaDetalhesScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Card: Vídeos do YouTube */}
+          {atleta.videos && atleta.videos.length > 0 && (
+            <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+              <View className="flex-row items-center mb-4">
+                <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                  <IconSymbol name="play.fill" size={20} color={colors.primary} />
+                </View>
+                <Text className="text-lg font-bold text-foreground">
+                  Vídeos ({atleta.videos.length})
+                </Text>
+              </View>
+              {atleta.videos.map((video, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => Linking.openURL(video)}
+                  className="bg-primary/10 rounded-xl p-3 flex-row items-center border border-primary/30 mb-2 last:mb-0"
+                >
+                  <IconSymbol name="play.fill" size={16} color={colors.primary} />
+                  <Text className="flex-1 text-primary ml-2 font-medium" numberOfLines={1}>
+                    Vídeo {index + 1}
+                  </Text>
+                  <IconSymbol name="chevron.right" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Card: Link */}
           {atleta.link && (
             <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">

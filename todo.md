@@ -240,3 +240,6 @@
 - [x] Adicionar indicador visual (barra de progresso ou badge) na lista de atletas
 - [ ] Adicionar filtro para mostrar apenas atletas incompletos
 - [x] Testar e validar o sistema de completude
+
+## Feature: Visualizar vídeos na página de detalhes
+- [x] Adicionar ícone pequeno de vídeo/play na página de detalhes do atleta quando há vídeos salvos
