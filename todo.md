@@ -255,3 +255,8 @@
 - [x] Implementar visualizador de PDF no app
 - [x] Modificar fluxo de relatório para mostrar prévia antes de baixar
 - [x] Adicionar botões "Cancelar" e "Baixar" na prévia
+
+
+## Feature: Atualização Automática de Dados
+- [x] Implementar refetch automático ao voltar para tela principal
+- [x] Garantir que mudanças feitas em detalhes/edição apareçam imediatamente

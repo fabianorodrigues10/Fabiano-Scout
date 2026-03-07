@@ -19,7 +19,8 @@ import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
 import { FilterDropdown } from "@/components/filter-dropdown";
 import { CompletudStatsModal } from "@/components/completude-stats-modal";
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useFocusEffect } from "expo-router";
 
 const FAIXAS_IDADE = [
   { label: "Todas", min: 0, max: 99 },
@@ -48,6 +49,13 @@ export default function HomeScreen() {
   const [selectedAtletasIds, setSelectedAtletasIds] = useState<number[]>([]);
 
   const { data: atletas = [], isLoading, refetch } = trpc.atletas.list.useQuery();
+
+  // Refetch automático ao voltar para a tela principal
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   // Extrair posições e clubes únicos dos dados
   const posicoes = useMemo(() => {
