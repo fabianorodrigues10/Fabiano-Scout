@@ -303,18 +303,18 @@ export default function AtletaDetalhesScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Card: Vídeos do YouTube */}
-          {atleta.videos && atleta.videos.length > 0 && (
-            <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
-              <View className="flex-row items-center mb-4">
-                <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
-                  <IconSymbol name="play.fill" size={20} color={colors.primary} />
-                </View>
-                <Text className="text-lg font-bold text-foreground">
-                  Vídeos ({atleta.videos.length})
-                </Text>
+          {/* Card: Vídeos do YouTube - SEMPRE VISÍVEL */}
+          <View className="bg-surface rounded-2xl p-4 mb-4 border border-border shadow-sm">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center mr-3">
+                <IconSymbol name="play.fill" size={20} color={colors.primary} />
               </View>
-              {atleta.videos.map((video, index) => (
+              <Text className="text-lg font-bold text-foreground">
+                Vídeos {atleta.videos && atleta.videos.length > 0 ? `(${atleta.videos.length})` : "(0)"}
+              </Text>
+            </View>
+            {atleta.videos && atleta.videos.length > 0 ? (
+              atleta.videos.map((video, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => Linking.openURL(video)}
@@ -326,9 +326,15 @@ export default function AtletaDetalhesScreen() {
                   </Text>
                   <IconSymbol name="chevron.right" size={16} color={colors.primary} />
                 </TouchableOpacity>
-              ))}
-            </View>
-          )}
+              ))
+            ) : (
+              <View className="bg-background rounded-xl p-4 border border-border/50">
+                <Text className="text-sm text-muted text-center italic">
+                  Sem vídeos. Toque em editar para adicionar.
+                </Text>
+              </View>
+            )}
+          </View>
 
           {/* Card: Link */}
           {atleta.link && (

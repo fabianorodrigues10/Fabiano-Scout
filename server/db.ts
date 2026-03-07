@@ -164,21 +164,24 @@ export async function getAtletas(userId: number) {
     });
     
     // Adicionar foto e vídeos a cada atleta
-    return result.map(atleta => ({
-      ...atleta,
-      fotoUrl: fotoMap.get(atleta.id) || null,
-      videos: videoMap.get(atleta.id) || [],
-      completude: calcularCompletude(atleta, fotoMap.has(atleta.id))
-    }));
+    return result.map(atleta => {
+      const temVideo = (videoMap.get(atleta.id) || []).length > 0;
+      return {
+        ...atleta,
+        fotoUrl: fotoMap.get(atleta.id) || null,
+        videos: videoMap.get(atleta.id) || [],
+        completude: calcularCompletude(atleta, fotoMap.has(atleta.id), temVideo)
+      };
+    });
   }
   
   return result.map(atleta => ({
     ...atleta,
-    completude: calcularCompletude(atleta, false)
+    completude: calcularCompletude(atleta, false, false)
   }));
 }
 
-function calcularCompletude(atleta: any, temFoto: boolean): number {
+function calcularCompletude(atleta: any, temFoto: boolean, temVideo: boolean = false): number {
   const campos = [
     atleta.nome ? 1 : 0,
     atleta.posicao ? 1 : 0,
@@ -189,6 +192,7 @@ function calcularCompletude(atleta: any, temFoto: boolean): number {
     atleta.escala ? 1 : 0,
     atleta.valencia ? 1 : 0,
     temFoto ? 1 : 0,
+    temVideo ? 1 : 0,
   ];
   
   const total = campos.reduce((a, b) => a + b, 0);
