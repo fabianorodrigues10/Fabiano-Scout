@@ -232,3 +232,11 @@
 - [x] Implementar modal para adicionar vídeos
 - [x] Adicionar links de vídeos no PDF relatório
 - [x] Adicionar logs de debug para rastrear salvamento de vídeos
+
+
+## Feature: Indicador de Completude de Atletas
+- [x] Limpar todos os valores '1' do campo 'escala' do banco de dados
+- [x] Criar função para calcular % de completude do atleta
+- [x] Adicionar indicador visual (barra de progresso ou badge) na lista de atletas
+- [ ] Adicionar filtro para mostrar apenas atletas incompletos
+- [x] Testar e validar o sistema de completude

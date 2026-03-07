@@ -167,11 +167,32 @@ export async function getAtletas(userId: number) {
     return result.map(atleta => ({
       ...atleta,
       fotoUrl: fotoMap.get(atleta.id) || null,
-      videos: videoMap.get(atleta.id) || []
+      videos: videoMap.get(atleta.id) || [],
+      completude: calcularCompletude(atleta, fotoMap.has(atleta.id))
     }));
   }
   
-  return result;
+  return result.map(atleta => ({
+    ...atleta,
+    completude: calcularCompletude(atleta, false)
+  }));
+}
+
+function calcularCompletude(atleta: any, temFoto: boolean): number {
+  const campos = [
+    atleta.nome ? 1 : 0,
+    atleta.posicao ? 1 : 0,
+    atleta.dataNascimento ? 1 : 0,
+    atleta.altura ? 1 : 0,
+    atleta.pe ? 1 : 0,
+    atleta.link ? 1 : 0,
+    atleta.escala ? 1 : 0,
+    atleta.valencia ? 1 : 0,
+    temFoto ? 1 : 0,
+  ];
+  
+  const total = campos.reduce((a, b) => a + b, 0);
+  return Math.round((total / campos.length) * 100);
 }
 
 /**

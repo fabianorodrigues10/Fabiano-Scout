@@ -500,9 +500,19 @@ export default function HomeScreen() {
                 onPress={() => handleAtletaPress(item.id)}
                 style={{ flex: 1 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 4 }} numberOfLines={1}>
-                  {item.nome || "Sem nome"}
-                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                    {item.nome || "Sem nome"}
+                  </Text>
+                  <View style={{ backgroundColor: item.completude === 100 ? colors.success + "20" : colors.warning + "20", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: item.completude === 100 ? colors.success : colors.warning }}>
+                      {item.completude}%
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2, marginBottom: 8, overflow: "hidden" }}>
+                  <View style={{ height: "100%", width: `${item.completude}%`, backgroundColor: item.completude === 100 ? colors.success : colors.warning, borderRadius: 2 }} />
+                </View>
                 <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
                   {item.posicao && (
                     <View style={{ backgroundColor: colors.primary + "20", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
