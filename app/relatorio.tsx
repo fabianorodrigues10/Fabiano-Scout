@@ -17,6 +17,8 @@ import { FilterDropdown } from "@/components/filter-dropdown";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
+import { generateReportWithPreview, downloadPdf } from "@/lib/report-preview";
+import { PDFPreviewModal } from "@/components/pdf-preview-modal";
 
 // Faixas de idade padrão
 const FAIXAS_IDADE = [
@@ -47,6 +49,9 @@ export default function RelatorioScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [currentFilters, setCurrentFilters] = useState<any>(null);
 
   // Obter posições e clubes únicos
   const posicoes = useMemo(() => {
@@ -128,13 +133,20 @@ export default function RelatorioScreen() {
         clube: selectedClubes.length > 0 ? selectedClubes.join(", ") : "Todos",
         busca: searchQuery || undefined,
       };
-      await generateReport(selectedAtletasIds, filters);
-      Alert.alert("Sucesso", "Relatório gerado com sucesso!");
+      const blob = await generateReportWithPreview(selectedAtletasIds, filters);
+      setPdfBlob(blob);
+      setCurrentFilters(filters);
+      setShowPdfPreview(true);
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Não foi possível gerar o relatório.");
     } finally {
       setGeneratingPdf(false);
     }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!pdfBlob) return;
+    await downloadPdf(pdfBlob, "Relatorio_Fabiano_Scout.pdf");
   };
 
   const handleGenerateExcel = async () => {
@@ -365,6 +377,15 @@ export default function RelatorioScreen() {
         }
         contentContainerStyle={{ paddingTop: 0, paddingBottom: 0 }}
         scrollEnabled={true}
+      />
+
+      {/* Modal de Prévia de PDF */}
+      <PDFPreviewModal
+        visible={showPdfPreview}
+        pdfBlob={pdfBlob}
+        onClose={() => setShowPdfPreview(false)}
+        onDownload={handleDownloadPdf}
+        fileName="Relatorio_Fabiano_Scout.pdf"
       />
     </ScreenContainer>
   );

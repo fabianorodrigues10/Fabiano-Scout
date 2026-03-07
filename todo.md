@@ -249,3 +249,9 @@
 - [x] Criar modal/tela com gráfico de distribuição de completude (100%, 90-99%, 80-89%, etc)
 - [x] Adicionar botão na tela principal para abrir estatísticas
 - [x] Mostrar quantidade de atletas em cada faixa de completude
+
+
+## Feature: Prévia de PDF antes de Baixar
+- [x] Implementar visualizador de PDF no app
+- [x] Modificar fluxo de relatório para mostrar prévia antes de baixar
+- [x] Adicionar botões "Cancelar" e "Baixar" na prévia
