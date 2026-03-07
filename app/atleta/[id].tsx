@@ -484,6 +484,36 @@ export default function AtletaFormScreen() {
           id: Number(id),
           ...data,
         });
+        
+        // Salvar vídeos ao editar
+        if (videoLinks && videoLinks.length > 0) {
+          console.log("[DEBUG] Iniciando salvamento de vídeos ao editar:", videoLinks);
+          try {
+            for (const videoUrl of videoLinks) {
+              if (videoUrl.trim()) {
+                console.log("[DEBUG] Salvando vídeo:", videoUrl);
+                const videoPayload = {
+                  atletaId: Number(id),
+                  tipo: 'video' as const,
+                  nome: `Vídeo - ${new Date().toLocaleString()}`,
+                  url: videoUrl.trim(),
+                  s3Key: `videos/${id}/${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                  mimeType: 'video/youtube',
+                  tamanho: 0,
+                  descricao: 'Vídeo do YouTube',
+                };
+                console.log('[DEBUG] Payload do vídeo:', videoPayload);
+                const videoResult = await createVideoMutation.mutateAsync(videoPayload);
+                console.log("[DEBUG] Vídeo salvo com sucesso:", videoResult);
+              }
+            }
+            console.log("[DEBUG] Todos os vídeos salvos com sucesso");
+          } catch (error) {
+            console.error("[DEBUG] Erro ao salvar vídeos:", error);
+            Alert.alert("Aviso", `Erro ao salvar vídeos: ${error}`);
+          }
+        }
+        
         Alert.alert("Sucesso", "Atleta atualizado com sucesso");
       } else {
         const result = await createMutation.mutateAsync(data);
