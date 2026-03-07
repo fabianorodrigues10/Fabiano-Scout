@@ -506,7 +506,7 @@ export default function AtletaFormScreen() {
             const mimeType = base64DataUrl.split(';')[0].replace('data:', '');
             const fileName = `foto-${Date.now()}.jpg`;
             
-            await trpc.midias.uploadFoto.useMutation().mutateAsync({
+            await uploadMutation.mutateAsync({
               atletaId: result.id,
               fileName,
               mimeType,
