@@ -243,3 +243,9 @@
 
 ## Feature: Visualizar vídeos na página de detalhes
 - [x] Adicionar ícone pequeno de vídeo/play na página de detalhes do atleta quando há vídeos salvos
+
+
+## Feature: Estatísticas de Completude
+- [x] Criar modal/tela com gráfico de distribuição de completude (100%, 90-99%, 80-89%, etc)
+- [x] Adicionar botão na tela principal para abrir estatísticas
+- [x] Mostrar quantidade de atletas em cada faixa de completude

@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { generateReport, generateExcel } from "@/lib/report";
 import { Alert, Modal } from "react-native";
 import { FilterDropdown } from "@/components/filter-dropdown";
+import { CompletudStatsModal } from "@/components/completude-stats-modal";
 import { useState, useMemo, useCallback, useRef } from "react";
 
 const FAIXAS_IDADE = [
@@ -148,6 +149,7 @@ export default function HomeScreen() {
   const [generatingExcel, setGeneratingExcel] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"nome" | "idade" | "altura">("nome");
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   const handleAddAtleta = () => {
     router.push("/atleta/novo" as any);
@@ -369,6 +371,12 @@ export default function HomeScreen() {
               className="w-10 h-10 rounded-full bg-primary justify-center items-center"
             >
               <IconSymbol name="plus" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowStatsModal(true)}
+              className="w-10 h-10 rounded-full bg-primary/20 justify-center items-center"
+            >
+              <IconSymbol name="chart.bar.fill" size={20} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push("/relatorio")}
@@ -601,6 +609,41 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Estatísticas de Completude */}
+      {useMemo(() => {
+        const stats = [
+          { min: 100, max: 100, label: "100% Completo", count: 0, percentage: 0 },
+          { min: 90, max: 99, label: "90-99%", count: 0, percentage: 0 },
+          { min: 80, max: 89, label: "80-89%", count: 0, percentage: 0 },
+          { min: 70, max: 79, label: "70-79%", count: 0, percentage: 0 },
+          { min: 60, max: 69, label: "60-69%", count: 0, percentage: 0 },
+          { min: 50, max: 59, label: "50-59%", count: 0, percentage: 0 },
+          { min: 0, max: 49, label: "Menos de 50%", count: 0, percentage: 0 },
+        ];
+
+        atletas.forEach((atleta) => {
+          const completude = atleta.completude || 0;
+          const bracket = stats.find((s) => completude >= s.min && completude <= s.max);
+          if (bracket) {
+            bracket.count++;
+          }
+        });
+
+        stats.forEach((stat) => {
+          stat.percentage = atletas.length > 0 ? Math.round((stat.count / atletas.length) * 100) : 0;
+        });
+
+        return (
+          <CompletudStatsModal
+            visible={showStatsModal}
+            onClose={() => setShowStatsModal(false)}
+            stats={stats}
+            totalAtletas={atletas.length}
+          />
+        );
+      }, [atletas, showStatsModal])}
+
     </ScreenContainer>
   );
 }
