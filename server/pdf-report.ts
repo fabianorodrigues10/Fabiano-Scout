@@ -56,51 +56,10 @@ function drawHeader(doc: PDFKit.PDFDocument, count: number, filters: any) {
   const dateStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()} às ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   doc.fontSize(9).fillColor(GRAY).font("Helvetica").text(`Gerado em ${dateStr}  •  ${count} atleta${count !== 1 ? "s" : ""} selecionado${count !== 1 ? "s" : ""}`, 40, 92);
 
-  // Filtros
-  const filterParts: string[] = [];
-  filterParts.push(`Posição: ${filters.posicao || "Todas"}`);
-  filterParts.push(`Faixa de Idade: ${filters.faixaIdade || "Todas"}`);
-  filterParts.push(`Clube: ${filters.clube || "Todos"}`);
-  if (filters.busca) filterParts.push(`Busca: "${filters.busca}"`);
-  doc.fontSize(9).font("Helvetica-BoldOblique").fillColor(GRAY).text("Filtros: ", 40, 108, { continued: true });
-  doc.font("Helvetica-Oblique").text(filterParts.join("  |  "));
-
-  return 130;
+  return 110;
 }
 
-function drawStatsBar(doc: PDFKit.PDFDocument, data: any[], y: number): number {
-  doc.fontSize(14).fillColor(DARK).font("Helvetica-Bold").text("Resumo", 40, y);
-  y += 22;
 
-  const posSet = new Set<string>();
-  const clubeSet = new Set<string>();
-  const idades: number[] = [];
-  data.forEach((a) => {
-    if (a.posicao) posSet.add(a.posicao);
-    if (a.clube) clubeSet.add(a.clube);
-    if (a.idade) idades.push(a.idade);
-  });
-  const mediaIdade = idades.length > 0 ? (idades.reduce((s, v) => s + v, 0) / idades.length).toFixed(1) : "—";
-
-  // Background
-  doc.roundedRect(40, y, 515, 50, 4).fillColor([255, 243, 224] as RGB).fill();
-
-  const stats = [
-    { value: String(data.length), label: "Atletas" },
-    { value: String(posSet.size), label: "Posições" },
-    { value: String(mediaIdade), label: "Idade Média" },
-    { value: String(clubeSet.size), label: "Clubes" },
-  ];
-
-  const colW = 515 / 4;
-  stats.forEach((s, i) => {
-    const x = 40 + i * colW;
-    doc.fontSize(20).fillColor(PRIMARY).font("Helvetica-Bold").text(s.value, x, y + 8, { width: colW, align: "center" });
-    doc.fontSize(8).fillColor(GRAY).font("Helvetica").text(s.label, x, y + 32, { width: colW, align: "center" });
-  });
-
-  return y + 60;
-}
 
 function drawTable(doc: PDFKit.PDFDocument, data: any[], startY: number): number {
   let y = startY;
@@ -334,7 +293,6 @@ export function registerPdfRoutes(app: any) {
 
       // Gerar conteúdo
       let y = drawHeader(doc, data.length, filters || {});
-      y = drawStatsBar(doc, data, y);
       y = drawTable(doc, data, y + 10);
       drawCards(doc, data, y + 10);
       drawFooter(doc);
