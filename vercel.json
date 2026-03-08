@@ -1,7 +1,7 @@
 {
   "buildCommand": "pnpm vercel-build",
   "outputDirectory": "dist",
-  "framework": "other",
+  "framework": "node",
   "env": {
     "NODE_ENV": "production"
   },
