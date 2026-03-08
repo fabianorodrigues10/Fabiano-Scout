@@ -2,7 +2,15 @@
   "buildCommand": "pnpm build:web",
   "outputDirectory": "dist/web",
   "framework": "node",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "^/(?!_next|_vercel|.*\\..*)",
+      "dest": "/api"
+    }
+  ]
 }
