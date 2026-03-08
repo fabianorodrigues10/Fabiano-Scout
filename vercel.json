@@ -1,0 +1,18 @@
+{
+  "buildCommand": "pnpm vercel-build",
+  "outputDirectory": "dist",
+  "framework": "other",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "rewrites": [
+    {
+      "source": "/web/(.*)",
+      "destination": "/web/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/web/index.html"
+    }
+  ]
+}
